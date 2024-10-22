@@ -10,8 +10,8 @@ namespace SolicitudesService.Core.Entities
         public int IdEmpleado { get; set; }
         public int CantidadHoras { get; set; }
         public decimal MontoPorHora { get; set; }
-        public DateTime FechaSolicitud { get; set; }
+        public DateOnly FechaSolicitud { get; set; }
         public bool EstaAprobada { get; set; }
-        public DateTime? FechaAprobacion { get; set; }
+        public DateOnly? FechaAprobacion { get; set; }
     }
 }

@@ -9,8 +9,8 @@ namespace SolicitudesService.Core.Entities
         public int IdSolicitudDocumentos { get; set; }
         public int IdEmpleado { get; set; }
         public string TipoDocumento { get; set; } = string.Empty;
-        public DateTime FechaSolicitud { get; set; }
+        public DateOnly FechaSolicitud { get; set; }
         public bool EstaAprobada { get; set; }
-        public DateTime? FechaAprobacion { get; set; }
+        public DateOnly? FechaAprobacion { get; set; }
     }
 }
