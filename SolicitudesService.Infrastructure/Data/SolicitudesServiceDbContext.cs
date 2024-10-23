@@ -21,7 +21,7 @@ namespace SolicitudesService.Infrastructure.Data
             // Configuración para SolicitudPersonal
             modelBuilder.Entity<SolicitudPersonal>().ToTable("SolicitudesPersonales");
             modelBuilder.Entity<SolicitudPersonal>()
-                .Property(sp => sp.Descripcion)
+                .Property(sp => sp.Motivo)
                 .IsRequired()
                 .HasMaxLength(500);
 
@@ -38,6 +38,10 @@ namespace SolicitudesService.Infrastructure.Data
                 .Property(she => she.CantidadHoras)
                 .IsRequired();
 
+            modelBuilder.Entity<SolicitudHorasExtra>()
+                .Property(she => she.FechaSolicitud)
+                .IsRequired();
+
             // Configuración para SolicitudVacaciones
             modelBuilder.Entity<SolicitudVacaciones>().ToTable("SolicitudesVacaciones");
             modelBuilder.Entity<SolicitudVacaciones>()
@@ -52,10 +56,10 @@ namespace SolicitudesService.Infrastructure.Data
                 .Property(sv => sv.FechaFin)
                 .IsRequired();
 
-            // Asegurarse de que la propiedad `FechaAprobacion` sea opcional (nullable)
             modelBuilder.Entity<SolicitudVacaciones>()
                 .Property(sv => sv.FechaAprobacion)
-                .IsRequired(false);
+                .IsRequired(false); 
+
         }
     }
 }

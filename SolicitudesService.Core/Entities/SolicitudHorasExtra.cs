@@ -5,6 +5,7 @@ namespace SolicitudesService.Core.Entities
 {
     public class SolicitudHorasExtra
     {
+        [Key]
         public int IdSolicitudHorasExtra { get; set; }
         public int IdEmpleado { get; set; }  
         public int CantidadHoras { get; set; }  
