@@ -55,6 +55,11 @@ namespace SolicitudesService.Infrastructure.Data
             modelBuilder.Entity<SolicitudVacaciones>()
                 .Property(sv => sv.FechaFin)
                 .IsRequired();
+
+            // Asegurarse de que la propiedad `FechaAprobacion` sea opcional (nullable)
+            modelBuilder.Entity<SolicitudVacaciones>()
+                .Property(sv => sv.FechaAprobacion)
+                .IsRequired(false);
         }
     }
 }

@@ -1,30 +1,20 @@
-# Consulte https://aka.ms/customizecontainer para aprender a personalizar su contenedor de depuración y cómo Visual Studio usa este Dockerfile para compilar sus imágenes para una depuración más rápida.
-
-# Esta fase se usa cuando se ejecuta desde VS en modo rápido (valor predeterminado para la configuración de depuración)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
-
-
-# Esta fase se usa para compilar el proyecto de servicio
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["SolicitudesServiceAPI/SolicitudesServiceAPI.csproj", "SolicitudesServiceAPI/"]
+
+COPY ["SolicitudesService/SolicitudesServiceAPI/SolicitudesServiceAPI.csproj", "SolicitudesServiceAPI/"]
+COPY ["SolicitudesService/SolicitudesService.Core/SolicitudesService.Core.csproj", "SolicitudesService.Core/"]
+COPY ["SolicitudesService/SolicitudesService.Application/SolicitudesService.Application.csproj", "SolicitudesService.Application/"]
+COPY ["SolicitudesService/SolicitudesService.Infrastructure/SolicitudesService.Infrastructure.csproj", "SolicitudesService.Infrastructure/"]
+
 RUN dotnet restore "./SolicitudesServiceAPI/SolicitudesServiceAPI.csproj"
+
 COPY . .
-WORKDIR "/src/SolicitudesServiceAPI"
-RUN dotnet build "./SolicitudesServiceAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Esta fase se usa para publicar el proyecto de servicio que se copiará en la fase final.
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SolicitudesServiceAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+WORKDIR "/src"
+RUN dotnet build "SolicitudesService/SolicitudesServiceAPI/SolicitudesServiceAPI.csproj" -c Release -o /app/build
+RUN dotnet publish "SolicitudesService/SolicitudesServiceAPI/SolicitudesServiceAPI.csproj" -c Release -o /app/publish
 
-# Esta fase se usa en producción o cuando se ejecuta desde VS en modo normal (valor predeterminado cuando no se usa la configuración de depuración)
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "SolicitudesServiceAPI.dll"]
