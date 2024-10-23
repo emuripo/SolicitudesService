@@ -5,8 +5,6 @@ using SolicitudesService.Application.DTO;
 using SolicitudesService.Infrastructure.Data;
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SolicitudesService.API.Controllers
@@ -16,56 +14,51 @@ namespace SolicitudesService.API.Controllers
     public class SolicitudesAPIController : ControllerBase
     {
         private readonly SolicitudesServiceDbContext _context;
-        private readonly IHttpClientFactory _httpClientFactory;
 
-        public SolicitudesAPIController(SolicitudesServiceDbContext context, IHttpClientFactory httpClientFactory)
+        public SolicitudesAPIController(SolicitudesServiceDbContext context)
         {
             _context = context;
-            _httpClientFactory = httpClientFactory;
         }
 
-        // POST: api/Solicitudes
-        [HttpPost]
-        public async Task<ActionResult<SolicitudVacacionesDTO>> CreateSolicitud([FromBody] SolicitudVacacionesDTO solicitudDTO)
+        // POST: api/SolicitudesHorasExtra
+        [HttpPost("HorasExtra")]
+        public async Task<ActionResult<SolicitudHorasExtraDTO>> CreateSolicitudHorasExtra([FromBody] SolicitudHorasExtraDTO solicitudDTO)
         {
-            if (!await ValidarSolicitud(solicitudDTO))
+            if (!await ValidarSolicitudHorasExtra(solicitudDTO))
             {
-                return BadRequest("La solicitud no es válida. Verifica los días disponibles o si las fechas se superponen.");
+                return BadRequest("La solicitud de horas extra no es válida. Verifica que no se exceda el límite permitido de horas.");
             }
 
-            var solicitud = new SolicitudVacaciones
+            var solicitud = new SolicitudHorasExtra
             {
                 IdEmpleado = solicitudDTO.IdEmpleado,
-                FechaInicio = solicitudDTO.FechaInicio,
-                FechaFin = solicitudDTO.FechaFin,
-                FechaSolicitud = DateTime.Now, // Se registra la fecha actual
-                EstaAprobada = false // Inicialmente no aprobada
+                CantidadHoras = solicitudDTO.CantidadHoras,
+                FechaSolicitud = DateTime.Now,
+                EstaAprobada = false
             };
 
-            _context.SolicitudesVacaciones.Add(solicitud);
+            _context.SolicitudesHorasExtra.Add(solicitud);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetSolicitud), new { id = solicitud.IdSolicitudVacaciones }, solicitudDTO);
+            return CreatedAtAction(nameof(GetSolicitudHorasExtra), new { id = solicitud.IdSolicitudHorasExtra }, solicitudDTO);
         }
 
-        // PUT: api/Solicitudes/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSolicitud(int id, [FromBody] SolicitudVacacionesDTO solicitudDTO)
+        // PUT: api/SolicitudesHorasExtra/5
+        [HttpPut("HorasExtra/{id}")]
+        public async Task<IActionResult> UpdateSolicitudHorasExtra(int id, [FromBody] SolicitudHorasExtraDTO solicitudDTO)
         {
-            var solicitud = await _context.SolicitudesVacaciones.FindAsync(id);
+            var solicitud = await _context.SolicitudesHorasExtra.FindAsync(id);
             if (solicitud == null)
             {
                 return NotFound();
             }
 
-            if (!await ValidarSolicitud(solicitudDTO))
+            if (!await ValidarSolicitudHorasExtra(solicitudDTO))
             {
-                return BadRequest("La solicitud no es válida. Verifica los días disponibles o si las fechas se superponen.");
+                return BadRequest("La solicitud de horas extra no es válida. Verifica que no se exceda el límite permitido de horas.");
             }
 
-            // Actualizar propiedades
-            solicitud.FechaInicio = solicitudDTO.FechaInicio;
-            solicitud.FechaFin = solicitudDTO.FechaFin;
+            solicitud.CantidadHoras = solicitudDTO.CantidadHoras;
             solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
 
             await _context.SaveChangesAsync();
@@ -73,39 +66,37 @@ namespace SolicitudesService.API.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Solicitudes/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSolicitud(int id)
+        // Validar la solicitud de horas extra
+        private async Task<bool> ValidarSolicitudHorasExtra(SolicitudHorasExtraDTO solicitudDTO)
         {
-            var solicitud = await _context.SolicitudesVacaciones.FindAsync(id);
-            if (solicitud == null)
+            // Asumimos que la jornada ordinaria es de 8 horas para este ejemplo
+            int jornadaOrdinaria = 8;
+
+            // Verificar que la suma de la jornada ordinaria más las horas extra no exceda 12 horas
+            if (solicitudDTO.CantidadHoras + jornadaOrdinaria > 12)
             {
-                return NotFound();
+                return false; // Excede el límite de 12 horas
             }
 
-            _context.SolicitudesVacaciones.Remove(solicitud);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return true;
         }
 
-        // GET: api/Solicitudes/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<SolicitudVacacionesDTO>> GetSolicitud(int id)
+        // GET: api/SolicitudesHorasExtra/5
+        [HttpGet("HorasExtra/{id}")]
+        public async Task<ActionResult<SolicitudHorasExtraDTO>> GetSolicitudHorasExtra(int id)
         {
-            var solicitud = await _context.SolicitudesVacaciones.FindAsync(id);
+            var solicitud = await _context.SolicitudesHorasExtra.FindAsync(id);
 
             if (solicitud == null)
             {
                 return NotFound();
             }
 
-            var solicitudDTO = new SolicitudVacacionesDTO
+            var solicitudDTO = new SolicitudHorasExtraDTO
             {
-                IdSolicitudVacaciones = solicitud.IdSolicitudVacaciones,
+                IdSolicitudHorasExtra = solicitud.IdSolicitudHorasExtra,
                 IdEmpleado = solicitud.IdEmpleado,
-                FechaInicio = solicitud.FechaInicio,
-                FechaFin = solicitud.FechaFin,
+                CantidadHoras = solicitud.CantidadHoras,
                 FechaSolicitud = solicitud.FechaSolicitud,
                 EstaAprobada = solicitud.EstaAprobada
             };
@@ -113,84 +104,20 @@ namespace SolicitudesService.API.Controllers
             return Ok(solicitudDTO);
         }
 
-        // Validar la solicitud
-        private async Task<bool> ValidarSolicitud(SolicitudVacacionesDTO solicitudDTO)
+        // DELETE: api/SolicitudesHorasExtra/5
+        [HttpDelete("HorasExtra/{id}")]
+        public async Task<IActionResult> DeleteSolicitudHorasExtra(int id)
         {
-            // Validar que las fechas de vacaciones no se superpongan
-            if (await SolicitudSeSuperpone(solicitudDTO.IdEmpleado, solicitudDTO.FechaInicio, solicitudDTO.FechaFin))
+            var solicitud = await _context.SolicitudesHorasExtra.FindAsync(id);
+            if (solicitud == null)
             {
-                return false; // Las fechas se superponen
+                return NotFound();
             }
 
-            // Verificar que el empleado tenga días de vacaciones disponibles
-            if (!await EmpleadoTieneDiasDisponibles(solicitudDTO.IdEmpleado, solicitudDTO.FechaInicio, solicitudDTO.FechaFin))
-            {
-                return false; // No hay suficientes días disponibles
-            }
+            _context.SolicitudesHorasExtra.Remove(solicitud);
+            await _context.SaveChangesAsync();
 
-            return true; // Validación exitosa
-        }
-
-        // Método para comprobar si la solicitud se superpone
-        private async Task<bool> SolicitudSeSuperpone(int idEmpleado, DateTime fechaInicio, DateTime fechaFin)
-        {
-            var solicitudes = await _context.SolicitudesVacaciones
-                .Where(s => s.IdEmpleado == idEmpleado && s.FechaFin >= fechaInicio && s.FechaInicio <= fechaFin)
-                .ToListAsync();
-
-            return solicitudes.Count > 0; // Retorna true si hay superposición
-        }
-
-        // Método para verificar si el empleado tiene días disponibles
-        private async Task<bool> EmpleadoTieneDiasDisponibles(int idEmpleado, DateTime fechaInicio, DateTime fechaFin)
-        {
-            // Obtén el número de días solicitados
-            int diasSolicitados = (fechaFin - fechaInicio).Days + 1;
-
-            // Llamar a FuncionarioService para obtener los días acumulados y tomados
-            var httpClient = _httpClientFactory.CreateClient("FuncionarioService");
-            var response = await httpClient.GetAsync($"/{idEmpleado}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return false; // Error al obtener datos del empleado
-            }
-
-            var empleadoJson = await response.Content.ReadAsStringAsync();
-
-            // Deserializar solo los datos que necesitamos
-            var empleado = JsonSerializer.Deserialize<dynamic>(empleadoJson);
-
-            // Suponiendo que "FechaContratacion" viene en el JSON
-            DateTime fechaContratacion = empleado?.FechaContratacion;
-
-            if (fechaContratacion == null)
-            {
-                return false; // Error, no se pudo obtener la fecha de contratación
-            }
-
-            var diasAcumulados = CalcularDiasAcumulados(fechaContratacion);
-            var diasTomados = await ObtenerDiasTomados(idEmpleado);
-
-            // Verifica si los días solicitados no exceden los días disponibles
-            return (diasAcumulados - diasTomados) >= diasSolicitados;
-        }
-
-        // Método para calcular los días acumulados en base a la fecha de ingreso
-        private int CalcularDiasAcumulados(DateTime fechaIngreso)
-        {
-            var mesesTrabajados = (DateTime.Now.Year - fechaIngreso.Year) * 12 + DateTime.Now.Month - fechaIngreso.Month;
-            return mesesTrabajados; // 1 día por mes trabajado
-        }
-
-        // Método para obtener los días de vacaciones ya tomados
-        private async Task<int> ObtenerDiasTomados(int idEmpleado)
-        {
-            var solicitudesAprobadas = await _context.SolicitudesVacaciones
-                .Where(s => s.IdEmpleado == idEmpleado && s.EstaAprobada)
-                .ToListAsync();
-
-            return solicitudesAprobadas.Sum(s => (s.FechaFin - s.FechaInicio).Days + 1);
+            return NoContent();
         }
     }
 }

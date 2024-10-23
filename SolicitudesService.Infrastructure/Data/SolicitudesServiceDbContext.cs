@@ -38,10 +38,6 @@ namespace SolicitudesService.Infrastructure.Data
                 .Property(she => she.CantidadHoras)
                 .IsRequired();
 
-            modelBuilder.Entity<SolicitudHorasExtra>()
-                .Property(she => she.MontoPorHora)
-                .IsRequired();
-
             // Configuración para SolicitudVacaciones
             modelBuilder.Entity<SolicitudVacaciones>().ToTable("SolicitudesVacaciones");
             modelBuilder.Entity<SolicitudVacaciones>()
