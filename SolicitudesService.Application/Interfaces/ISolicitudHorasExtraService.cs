@@ -11,6 +11,5 @@ namespace SolicitudesService.Application.Interfaces
         Task<bool> DeleteSolicitudHorasExtraAsync(int id);
         Task<SolicitudHorasExtraDTO?> GetSolicitudHorasExtraByIdAsync(int id);
         Task<IEnumerable<SolicitudHorasExtraDTO>> GetAllSolicitudesHorasExtraAsync();
-        Task<bool> ValidarSolicitudHorasExtra(SolicitudHorasExtraDTO solicitudDTO);
     }
 }

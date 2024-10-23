@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="NewFolder1\**" />
+    <EmbeddedResource Remove="NewFolder1\**" />
+    <None Remove="NewFolder1\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SolicitudesService.Core\SolicitudesService.Core.csproj" />
+    <ProjectReference Include="..\SolicitudesService.Infrastructure\SolicitudesService.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
