@@ -4,6 +4,7 @@ using SolicitudesService.Infrastructure.Data;
 using SolicitudesService.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Net.Http;
 using System.Collections.Generic;
@@ -17,12 +18,14 @@ namespace SolicitudesService.Application.Services
         private readonly SolicitudesServiceDbContext _context;
         private readonly ILogger<SolicitudVacacionesService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public SolicitudVacacionesService(SolicitudesServiceDbContext context, ILogger<SolicitudVacacionesService> logger, IHttpClientFactory httpClientFactory)
+        public SolicitudVacacionesService(SolicitudesServiceDbContext context, ILogger<SolicitudVacacionesService> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         public async Task<IEnumerable<SolicitudVacacionesDTO>> GetAllSolicitudes()
@@ -151,9 +154,10 @@ namespace SolicitudesService.Application.Services
         {
             var diasSolicitados = (solicitudDTO.FechaFin - solicitudDTO.FechaInicio).Days + 1;
 
-            // Llamar a FuncionarioService para obtener la fecha de contratación del empleado
+            // Obtener la URL base de FuncionarioService desde IConfiguration
+            var funcionarioServiceUrl = _configuration["FuncionarioServiceUrl"];
             var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.GetAsync($"http://localhost:8085/api/Empleado/{solicitudDTO.IdEmpleado}");
+            var response = await httpClient.GetAsync($"{funcionarioServiceUrl}/{solicitudDTO.IdEmpleado}");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -162,16 +166,17 @@ namespace SolicitudesService.Application.Services
             }
 
             var empleadoJson = await response.Content.ReadAsStringAsync();
-            var empleado = JsonSerializer.Deserialize<dynamic>(empleadoJson);
+            _logger.LogInformation("Respuesta de FuncionarioService: {Json}", empleadoJson);
+            var empleado = JsonSerializer.Deserialize<JsonElement>(empleadoJson);
 
-            // Obtener la fecha de contratación del empleado
-            DateTime fechaContratacion = empleado?.infoContratoFuncionario?.fechaContratacion;
-
-            if (fechaContratacion == null)
+            // Verificar y obtener la fecha de inicio de contrato
+            if (!empleado.TryGetProperty("fechaInicioContrato", out JsonElement fechaInicioContratoElement))
             {
-                _logger.LogError("La fecha de contratación no se pudo obtener para el empleado con ID {IdEmpleado}.", solicitudDTO.IdEmpleado);
+                _logger.LogError("La propiedad 'fechaInicioContrato' no se encontró en la respuesta para el empleado con ID {IdEmpleado}.", solicitudDTO.IdEmpleado);
                 throw new EmployeeValidationException($"Error al obtener la fecha de contratación del empleado con ID {solicitudDTO.IdEmpleado}.");
             }
+
+            DateTime fechaContratacion = fechaInicioContratoElement.GetDateTime();
 
             // Calcular los días acumulados
             var diasAcumulados = CalcularDiasVacaciones(fechaContratacion);
