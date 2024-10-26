@@ -21,14 +21,14 @@ namespace SolicitudesService.Infrastructure.Data
             // Configuración para SolicitudPersonal
             modelBuilder.Entity<SolicitudPersonal>().ToTable("SolicitudesPersonales");
             modelBuilder.Entity<SolicitudPersonal>()
-                .Property(sp => sp.Motivo)
+                .Property(sp => sp.Descripcion)
                 .IsRequired()
                 .HasMaxLength(500);
 
             // Configuración para SolicitudDocumentos
             modelBuilder.Entity<SolicitudDocumentos>().ToTable("SolicitudesDocumentos");
             modelBuilder.Entity<SolicitudDocumentos>()
-                .Property(sd => sd.TipoDocumento)
+                .Property(sd => sd.Descripcion)
                 .IsRequired()
                 .HasMaxLength(100);
 

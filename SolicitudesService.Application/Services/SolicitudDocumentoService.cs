@@ -28,7 +28,7 @@ namespace SolicitudesService.Application.Services
             {
                 IdSolicitudDocumento = s.IdSolicitudDocumento,
                 IdEmpleado = s.IdEmpleado,
-                TipoDocumento = s.TipoDocumento,
+                Descripcion = s.Descripcion,
                 FechaSolicitud = s.FechaSolicitud,
                 EstaAprobada = s.EstaAprobada
             }).ToList();
@@ -50,7 +50,7 @@ namespace SolicitudesService.Application.Services
             {
                 IdSolicitudDocumento = solicitud.IdSolicitudDocumento,
                 IdEmpleado = solicitud.IdEmpleado,
-                TipoDocumento = solicitud.TipoDocumento,
+                Descripcion = solicitud.Descripcion,
                 FechaSolicitud = solicitud.FechaSolicitud,
                 EstaAprobada = solicitud.EstaAprobada
             };
@@ -61,7 +61,7 @@ namespace SolicitudesService.Application.Services
             var solicitud = new SolicitudDocumentos
             {
                 IdEmpleado = solicitudDTO.IdEmpleado,
-                TipoDocumento = solicitudDTO.TipoDocumento,
+                Descripcion = solicitudDTO.Descripcion,
                 FechaSolicitud = solicitudDTO.FechaSolicitud,
                 EstaAprobada = solicitudDTO.EstaAprobada
             };
@@ -87,7 +87,7 @@ namespace SolicitudesService.Application.Services
             }
 
             solicitud.IdEmpleado = solicitudDTO.IdEmpleado;
-            solicitud.TipoDocumento = solicitudDTO.TipoDocumento;
+            solicitud.Descripcion = solicitudDTO.Descripcion;
             solicitud.FechaSolicitud = solicitudDTO.FechaSolicitud;
             solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
 

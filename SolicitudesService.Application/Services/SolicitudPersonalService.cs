@@ -26,7 +26,7 @@ namespace SolicitudesService.Application.Services
             var solicitud = new SolicitudPersonal
             {
                 IdEmpleado = solicitudDTO.IdEmpleado,
-                Motivo = solicitudDTO.Motivo,
+                Descripcion = solicitudDTO.Descripcion,
                 FechaSolicitud = solicitudDTO.FechaSolicitud,
                 EstaAprobada = solicitudDTO.EstaAprobada,
                 FechaAprobacion = solicitudDTO.FechaAprobacion
@@ -52,7 +52,7 @@ namespace SolicitudesService.Application.Services
                 return false; // Aquí debes devolver false si no se encontró la solicitud
             }
 
-            solicitud.Motivo = solicitudDTO.Motivo;
+            solicitud.Descripcion = solicitudDTO.Descripcion;
             solicitud.FechaSolicitud = solicitudDTO.FechaSolicitud;
             solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
             solicitud.FechaAprobacion = solicitudDTO.FechaAprobacion;
@@ -97,7 +97,7 @@ namespace SolicitudesService.Application.Services
             {
                 IdSolicitudPersonal = solicitud.IdSolicitudPersonal,
                 IdEmpleado = solicitud.IdEmpleado,
-                Motivo = solicitud.Motivo,
+                Descripcion = solicitud.Descripcion,
                 FechaSolicitud = solicitud.FechaSolicitud,
                 EstaAprobada = solicitud.EstaAprobada,
                 FechaAprobacion = solicitud.FechaAprobacion
@@ -114,7 +114,7 @@ namespace SolicitudesService.Application.Services
             {
                 IdSolicitudPersonal = s.IdSolicitudPersonal,
                 IdEmpleado = s.IdEmpleado,
-                Motivo = s.Motivo,
+                Descripcion = s.Descripcion,
                 FechaSolicitud = s.FechaSolicitud,
                 EstaAprobada = s.EstaAprobada,
                 FechaAprobacion = s.FechaAprobacion
