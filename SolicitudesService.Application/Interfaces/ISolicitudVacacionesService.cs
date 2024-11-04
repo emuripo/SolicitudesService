@@ -1,4 +1,6 @@
 ﻿using SolicitudesService.Application.DTO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SolicitudesService.Application.Interfaces
 {

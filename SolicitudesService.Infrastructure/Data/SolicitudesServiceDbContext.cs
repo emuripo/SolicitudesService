@@ -45,10 +45,6 @@ namespace SolicitudesService.Infrastructure.Data
             // Configuración para SolicitudVacaciones
             modelBuilder.Entity<SolicitudVacaciones>().ToTable("SolicitudesVacaciones");
             modelBuilder.Entity<SolicitudVacaciones>()
-                .Property(sv => sv.DiasSolicitados)
-                .IsRequired();
-
-            modelBuilder.Entity<SolicitudVacaciones>()
                 .Property(sv => sv.FechaInicio)
                 .IsRequired();
 
@@ -58,8 +54,7 @@ namespace SolicitudesService.Infrastructure.Data
 
             modelBuilder.Entity<SolicitudVacaciones>()
                 .Property(sv => sv.FechaAprobacion)
-                .IsRequired(false); 
-
+                .IsRequired(false);
         }
     }
 }

@@ -118,12 +118,6 @@ namespace SolicitudesService.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdSolicitudVacaciones"));
 
-                    b.Property<int>("DiasRestantes")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DiasSolicitados")
-                        .HasColumnType("int");
-
                     b.Property<bool>("EstaAprobada")
                         .HasColumnType("bit");
 

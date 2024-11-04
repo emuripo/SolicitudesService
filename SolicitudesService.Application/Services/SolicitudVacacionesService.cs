@@ -4,9 +4,6 @@ using SolicitudesService.Infrastructure.Data;
 using SolicitudesService.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using System.Text.Json;
-using System.Net.Http;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,15 +14,11 @@ namespace SolicitudesService.Application.Services
     {
         private readonly SolicitudesServiceDbContext _context;
         private readonly ILogger<SolicitudVacacionesService> _logger;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
 
-        public SolicitudVacacionesService(SolicitudesServiceDbContext context, ILogger<SolicitudVacacionesService> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public SolicitudVacacionesService(SolicitudesServiceDbContext context, ILogger<SolicitudVacacionesService> logger)
         {
             _context = context;
             _logger = logger;
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
         }
 
         public async Task<IEnumerable<SolicitudVacacionesDTO>> GetAllSolicitudes()
@@ -38,7 +31,6 @@ namespace SolicitudesService.Application.Services
             {
                 IdSolicitudVacaciones = s.IdSolicitudVacaciones,
                 IdEmpleado = s.IdEmpleado,
-                DiasSolicitados = (s.FechaFin - s.FechaInicio).Days + 1,
                 FechaInicio = s.FechaInicio,
                 FechaFin = s.FechaFin,
                 FechaSolicitud = s.FechaSolicitud,
@@ -63,7 +55,6 @@ namespace SolicitudesService.Application.Services
             {
                 IdSolicitudVacaciones = solicitud.IdSolicitudVacaciones,
                 IdEmpleado = solicitud.IdEmpleado,
-                DiasSolicitados = (solicitud.FechaFin - solicitud.FechaInicio).Days + 1,
                 FechaInicio = solicitud.FechaInicio,
                 FechaFin = solicitud.FechaFin,
                 FechaSolicitud = solicitud.FechaSolicitud,
@@ -74,12 +65,6 @@ namespace SolicitudesService.Application.Services
 
         public async Task<SolicitudVacacionesDTO> CreateSolicitud(SolicitudVacacionesDTO solicitudDTO)
         {
-            if (!await ValidarSolicitudVacaciones(solicitudDTO))
-            {
-                _logger.LogWarning("La solicitud de vacaciones no es válida. El empleado no tiene suficientes días disponibles.");
-                throw new EmployeeValidationException("No tienes suficientes días de vacaciones disponibles.");
-            }
-
             var solicitud = new SolicitudVacaciones
             {
                 IdEmpleado = solicitudDTO.IdEmpleado,
@@ -108,12 +93,6 @@ namespace SolicitudesService.Application.Services
             {
                 _logger.LogWarning("Solicitud de vacaciones con ID {Id} no fue encontrada.", id);
                 return false;
-            }
-
-            if (!await ValidarSolicitudVacaciones(solicitudDTO))
-            {
-                _logger.LogWarning("La actualización de la solicitud de vacaciones no es válida. El empleado no tiene suficientes días disponibles.");
-                throw new EmployeeValidationException("No tienes suficientes días de vacaciones disponibles.");
             }
 
             solicitud.IdEmpleado = solicitudDTO.IdEmpleado;
@@ -148,73 +127,5 @@ namespace SolicitudesService.Application.Services
 
             return true;
         }
-
-        // Validación de la solicitud de vacaciones
-        private async Task<bool> ValidarSolicitudVacaciones(SolicitudVacacionesDTO solicitudDTO)
-        {
-            var diasSolicitados = (solicitudDTO.FechaFin - solicitudDTO.FechaInicio).Days + 1;
-
-            // Obtener la URL base de FuncionarioService desde IConfiguration
-            var funcionarioServiceUrl = _configuration["FuncionarioServiceUrl"];
-            var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.GetAsync($"{funcionarioServiceUrl}/{solicitudDTO.IdEmpleado}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError("No se pudo obtener la información del empleado con ID {IdEmpleado}.", solicitudDTO.IdEmpleado);
-                throw new EmployeeNotFoundException($"Error al obtener información del empleado con ID {solicitudDTO.IdEmpleado}.");
-            }
-
-            var empleadoJson = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation("Respuesta de FuncionarioService: {Json}", empleadoJson);
-            var empleado = JsonSerializer.Deserialize<JsonElement>(empleadoJson);
-
-            // Verificar y obtener la fecha de inicio de contrato
-            if (!empleado.TryGetProperty("fechaInicioContrato", out JsonElement fechaInicioContratoElement))
-            {
-                _logger.LogError("La propiedad 'fechaInicioContrato' no se encontró en la respuesta para el empleado con ID {IdEmpleado}.", solicitudDTO.IdEmpleado);
-                throw new EmployeeValidationException($"Error al obtener la fecha de contratación del empleado con ID {solicitudDTO.IdEmpleado}.");
-            }
-
-            DateTime fechaContratacion = fechaInicioContratoElement.GetDateTime();
-
-            // Calcular los días acumulados
-            var diasAcumulados = CalcularDiasVacaciones(fechaContratacion);
-            var diasTomados = await ObtenerDiasTomados(solicitudDTO.IdEmpleado);
-
-            if (diasAcumulados - diasTomados < diasSolicitados)
-            {
-                _logger.LogWarning("El empleado con ID {IdEmpleado} no tiene suficientes días disponibles.", solicitudDTO.IdEmpleado);
-                return false;
-            }
-
-            return true;
-        }
-
-        private int CalcularDiasVacaciones(DateTime fechaContratacion)
-        {
-            var mesesTrabajados = (DateTime.Now.Year - fechaContratacion.Year) * 12 + DateTime.Now.Month - fechaContratacion.Month;
-            return mesesTrabajados; // 1 día de vacaciones por cada mes trabajado
-        }
-
-        private async Task<int> ObtenerDiasTomados(int idEmpleado)
-        {
-            var solicitudesAprobadas = await _context.SolicitudesVacaciones
-                .Where(s => s.IdEmpleado == idEmpleado && s.EstaAprobada)
-                .ToListAsync();
-
-            return solicitudesAprobadas.Sum(s => (s.FechaFin - s.FechaInicio).Days + 1);
-        }
-    }
-
-    // Excepciones personalizadas
-    public class EmployeeNotFoundException : Exception
-    {
-        public EmployeeNotFoundException(string message) : base(message) { }
-    }
-
-    public class EmployeeValidationException : Exception
-    {
-        public EmployeeValidationException(string message) : base(message) { }
     }
 }

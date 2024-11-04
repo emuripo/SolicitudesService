@@ -4,7 +4,6 @@ using SolicitudesService.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using SolicitudesService.Application.Services;
 
 namespace SolicitudesService.API.Controllers
 {
@@ -25,11 +24,10 @@ namespace SolicitudesService.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SolicitudVacacionesDTO>>> GetAllSolicitudes()
         {
-            var solicitudes = await _solicitudVacacionesService.GetAllSolicitudes();
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes de vacaciones.", solicitudes.Count());
+            var solicitudes = (await _solicitudVacacionesService.GetAllSolicitudes()).ToList();
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes de vacaciones.", solicitudes.Count);
             return Ok(solicitudes);
         }
-
 
         // GET: api/SolicitudVacaciones/5
         [HttpGet("{id}")]
@@ -56,16 +54,6 @@ namespace SolicitudesService.API.Controllers
                 var solicitudCreada = await _solicitudVacacionesService.CreateSolicitud(solicitudDTO);
                 return CreatedAtAction(nameof(GetSolicitudVacacionesById), new { id = solicitudCreada.IdSolicitudVacaciones }, solicitudCreada);
             }
-            catch (EmployeeValidationException ex)
-            {
-                _logger.LogWarning("Error al crear la solicitud: {Message}", ex.Message);
-                return BadRequest(ex.Message);
-            }
-            catch (EmployeeNotFoundException ex)
-            {
-                _logger.LogError("Error al obtener información del empleado: {Message}", ex.Message);
-                return BadRequest(ex.Message);
-            }
             catch (System.Exception ex)
             {
                 _logger.LogError("Error inesperado al crear la solicitud: {Message}", ex.Message);
@@ -88,16 +76,6 @@ namespace SolicitudesService.API.Controllers
 
                 _logger.LogInformation("Solicitud de vacaciones con ID {Id} actualizada exitosamente.", id);
                 return NoContent();
-            }
-            catch (EmployeeValidationException ex)
-            {
-                _logger.LogWarning("Error al actualizar la solicitud: {Message}", ex.Message);
-                return BadRequest(ex.Message);
-            }
-            catch (EmployeeNotFoundException ex)
-            {
-                _logger.LogError("Error al obtener información del empleado: {Message}", ex.Message);
-                return BadRequest(ex.Message);
             }
             catch (System.Exception ex)
             {

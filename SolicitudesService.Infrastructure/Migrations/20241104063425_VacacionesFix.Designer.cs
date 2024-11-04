@@ -12,8 +12,8 @@ using SolicitudesService.Infrastructure.Data;
 namespace SolicitudesService.Infrastructure.Migrations
 {
     [DbContext(typeof(SolicitudesServiceDbContext))]
-    [Migration("20241026075032_SoliDocYHorasDescripcion")]
-    partial class SoliDocYHorasDescripcion
+    [Migration("20241104063425_VacacionesFix")]
+    partial class VacacionesFix
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -120,12 +120,6 @@ namespace SolicitudesService.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdSolicitudVacaciones"));
-
-                    b.Property<int>("DiasRestantes")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DiasSolicitados")
-                        .HasColumnType("int");
 
                     b.Property<bool>("EstaAprobada")
                         .HasColumnType("bit");

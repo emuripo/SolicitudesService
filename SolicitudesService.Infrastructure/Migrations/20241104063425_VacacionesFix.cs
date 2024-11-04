@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SolicitudesService.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class initialMigration : Migration
+    public partial class VacacionesFix : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,7 @@ namespace SolicitudesService.Infrastructure.Migrations
                     IdSolicitudDocumento = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IdEmpleado = table.Column<int>(type: "int", nullable: false),
-                    TipoDocumento = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     FechaSolicitud = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EstaAprobada = table.Column<bool>(type: "bit", nullable: false),
                     FechaAprobacion = table.Column<DateTime>(type: "datetime2", nullable: true)
@@ -52,7 +52,7 @@ namespace SolicitudesService.Infrastructure.Migrations
                     IdSolicitudPersonal = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IdEmpleado = table.Column<int>(type: "int", nullable: false),
-                    Motivo = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     FechaSolicitud = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EstaAprobada = table.Column<bool>(type: "bit", nullable: false),
                     FechaAprobacion = table.Column<DateTime>(type: "datetime2", nullable: true)
@@ -69,13 +69,11 @@ namespace SolicitudesService.Infrastructure.Migrations
                     IdSolicitudVacaciones = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IdEmpleado = table.Column<int>(type: "int", nullable: false),
-                    DiasSolicitados = table.Column<int>(type: "int", nullable: false),
                     FechaInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
                     FechaFin = table.Column<DateTime>(type: "datetime2", nullable: false),
                     FechaSolicitud = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EstaAprobada = table.Column<bool>(type: "bit", nullable: false),
-                    FechaAprobacion = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DiasRestantes = table.Column<int>(type: "int", nullable: false)
+                    FechaAprobacion = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
