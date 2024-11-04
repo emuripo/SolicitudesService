@@ -4,6 +4,7 @@ using SolicitudesService.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SolicitudesService.API.Controllers
 {
@@ -98,6 +99,21 @@ namespace SolicitudesService.API.Controllers
 
             _logger.LogInformation("Solicitud de vacaciones con ID {Id} eliminada exitosamente.", id);
             return NoContent();
+        }
+
+        // GET: api/SolicitudVacaciones/empleado/{idEmpleado}
+        [HttpGet("empleado/{idEmpleado}")]
+        public async Task<ActionResult<IEnumerable<SolicitudVacacionesDTO>>> GetSolicitudesByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _solicitudVacacionesService.GetSolicitudesByEmpleado(idEmpleado);
+            if (solicitudes == null || !solicitudes.Any())
+            {
+                _logger.LogWarning("No se encontraron solicitudes de vacaciones para el empleado con ID {IdEmpleado}.", idEmpleado);
+                return NotFound($"No se encontraron solicitudes de vacaciones para el empleado con ID {idEmpleado}.");
+            }
+
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes de vacaciones para el empleado con ID {IdEmpleado}.", solicitudes.Count(), idEmpleado);
+            return Ok(solicitudes);
         }
     }
 }

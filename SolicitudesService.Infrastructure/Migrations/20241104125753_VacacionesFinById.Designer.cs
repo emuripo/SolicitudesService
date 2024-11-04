@@ -12,8 +12,8 @@ using SolicitudesService.Infrastructure.Data;
 namespace SolicitudesService.Infrastructure.Migrations
 {
     [DbContext(typeof(SolicitudesServiceDbContext))]
-    [Migration("20241104063425_VacacionesFix")]
-    partial class VacacionesFix
+    [Migration("20241104125753_VacacionesFinById")]
+    partial class VacacionesFinById
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

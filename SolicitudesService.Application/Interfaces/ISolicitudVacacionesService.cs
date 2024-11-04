@@ -11,5 +11,6 @@ namespace SolicitudesService.Application.Interfaces
         Task<SolicitudVacacionesDTO> CreateSolicitud(SolicitudVacacionesDTO solicitud);
         Task<bool> UpdateSolicitud(int id, SolicitudVacacionesDTO solicitud);
         Task<bool> DeleteSolicitud(int id);
+        Task<IEnumerable<SolicitudVacacionesDTO>> GetSolicitudesByEmpleado(int idEmpleado);
     }
 }

@@ -1,4 +1,6 @@
 ﻿using SolicitudesService.Application.DTO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SolicitudesService.Application.Interfaces
 {
@@ -9,5 +11,6 @@ namespace SolicitudesService.Application.Interfaces
         Task<SolicitudDocumentoDTO> CreateSolicitud(SolicitudDocumentoDTO solicitud);
         Task<bool> UpdateSolicitud(int id, SolicitudDocumentoDTO solicitud);
         Task<bool> DeleteSolicitud(int id);
+        Task<IEnumerable<SolicitudDocumentoDTO>> GetSolicitudesByEmpleado(int idEmpleado);
     }
 }

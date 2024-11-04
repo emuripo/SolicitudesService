@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SolicitudesService.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class VacacionesFix : Migration
+    public partial class VacacionesFinById : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

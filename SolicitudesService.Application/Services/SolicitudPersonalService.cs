@@ -48,8 +48,8 @@ namespace SolicitudesService.Application.Services
 
             if (solicitud == null)
             {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada. Verifica que el ID proporcionado sea correcto.", id);
-                return false; // Aquí debes devolver false si no se encontró la solicitud
+                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
+                return false;
             }
 
             solicitud.Descripcion = solicitudDTO.Descripcion;
@@ -61,9 +61,8 @@ namespace SolicitudesService.Application.Services
 
             _logger.LogInformation("Solicitud personal con ID {IdSolicitudPersonal} actualizada exitosamente.", solicitud.IdSolicitudPersonal);
 
-            return true; // Aquí devuelves true si la solicitud fue actualizada correctamente
+            return true;
         }
-
 
         public async Task<bool> DeleteSolicitud(int id)
         {
@@ -71,7 +70,7 @@ namespace SolicitudesService.Application.Services
 
             if (solicitud == null)
             {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada. Verifica que el ID proporcionado sea correcto.", id);
+                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
                 return false;
             }
 
@@ -89,7 +88,7 @@ namespace SolicitudesService.Application.Services
 
             if (solicitud == null)
             {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada. Verifica que el ID proporcionado sea correcto.", id);
+                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
                 return null;
             }
 
@@ -109,6 +108,26 @@ namespace SolicitudesService.Application.Services
             var solicitudes = await _context.SolicitudesPersonales.ToListAsync();
 
             _logger.LogInformation("Se obtuvieron {Count} solicitudes personales.", solicitudes.Count);
+
+            return solicitudes.Select(s => new SolicitudPersonalDTO
+            {
+                IdSolicitudPersonal = s.IdSolicitudPersonal,
+                IdEmpleado = s.IdEmpleado,
+                Descripcion = s.Descripcion,
+                FechaSolicitud = s.FechaSolicitud,
+                EstaAprobada = s.EstaAprobada,
+                FechaAprobacion = s.FechaAprobacion
+            }).ToList();
+        }
+
+        // Implementación del nuevo método para obtener solicitudes por idEmpleado
+        public async Task<IEnumerable<SolicitudPersonalDTO>> GetSolicitudesByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _context.SolicitudesPersonales
+                .Where(s => s.IdEmpleado == idEmpleado)
+                .ToListAsync();
+
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes personales para el empleado con ID {IdEmpleado}.", solicitudes.Count, idEmpleado);
 
             return solicitudes.Select(s => new SolicitudPersonalDTO
             {

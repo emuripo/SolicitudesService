@@ -23,7 +23,6 @@ namespace SolicitudesService.Application.Services
 
         public async Task<SolicitudHorasExtraDTO> CreateSolicitudHorasExtraAsync(SolicitudHorasExtraDTO solicitudDTO)
         {
-            // Validar la solicitud
             if (!await ValidarSolicitudHorasExtra(solicitudDTO))
             {
                 _logger.LogWarning("Solicitud no válida: el empleado {IdEmpleado} excedió el límite de horas extra permitidas.", solicitudDTO.IdEmpleado);
@@ -35,7 +34,8 @@ namespace SolicitudesService.Application.Services
                 IdEmpleado = solicitudDTO.IdEmpleado,
                 CantidadHoras = solicitudDTO.CantidadHoras,
                 FechaSolicitud = solicitudDTO.FechaSolicitud,
-                EstaAprobada = solicitudDTO.EstaAprobada
+                EstaAprobada = solicitudDTO.EstaAprobada,
+                FechaAprobacion = solicitudDTO.FechaAprobacion
             };
 
             _context.SolicitudesHorasExtra.Add(solicitud);
@@ -54,11 +54,10 @@ namespace SolicitudesService.Application.Services
 
             if (solicitud == null)
             {
-                _logger.LogWarning("Solicitud con ID {id} no fue encontrada. Verifica que el ID proporcionado sea correcto.", id);
+                _logger.LogWarning("Solicitud con ID {id} no fue encontrada.", id);
                 return null;
             }
 
-            // Validar la solicitud
             if (!await ValidarSolicitudHorasExtra(solicitudDTO))
             {
                 _logger.LogWarning("Solicitud no válida: el empleado {IdEmpleado} excedió el límite de horas extra permitidas.", solicitudDTO.IdEmpleado);
@@ -68,6 +67,7 @@ namespace SolicitudesService.Application.Services
             solicitud.CantidadHoras = solicitudDTO.CantidadHoras;
             solicitud.FechaSolicitud = solicitudDTO.FechaSolicitud;
             solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
+            solicitud.FechaAprobacion = solicitudDTO.FechaAprobacion;
 
             await _context.SaveChangesAsync();
 
@@ -82,7 +82,7 @@ namespace SolicitudesService.Application.Services
 
             if (solicitud == null)
             {
-                _logger.LogWarning("Solicitud con ID {id} no fue encontrada. Verifica que el ID proporcionado sea correcto.", id);
+                _logger.LogWarning("Solicitud con ID {id} no fue encontrada.", id);
                 return false;
             }
 
@@ -100,7 +100,7 @@ namespace SolicitudesService.Application.Services
 
             if (solicitud == null)
             {
-                _logger.LogWarning("Solicitud con ID {id} no fue encontrada. Verifica que el ID proporcionado sea correcto.", id);
+                _logger.LogWarning("Solicitud con ID {id} no fue encontrada.", id);
                 return null;
             }
 
@@ -110,7 +110,8 @@ namespace SolicitudesService.Application.Services
                 IdEmpleado = solicitud.IdEmpleado,
                 CantidadHoras = solicitud.CantidadHoras,
                 FechaSolicitud = solicitud.FechaSolicitud,
-                EstaAprobada = solicitud.EstaAprobada
+                EstaAprobada = solicitud.EstaAprobada,
+                FechaAprobacion = solicitud.FechaAprobacion
             };
         }
 
@@ -120,17 +121,37 @@ namespace SolicitudesService.Application.Services
 
             _logger.LogInformation("Se obtuvieron {Count} solicitudes de horas extra.", solicitudes.Count);
 
-            var solicitudesDTO = solicitudes.Select(s => new SolicitudHorasExtraDTO
+            return solicitudes.Select(s => new SolicitudHorasExtraDTO
             {
                 IdSolicitudHorasExtra = s.IdSolicitudHorasExtra,
                 IdEmpleado = s.IdEmpleado,
                 CantidadHoras = s.CantidadHoras,
                 FechaSolicitud = s.FechaSolicitud,
-                EstaAprobada = s.EstaAprobada
+                EstaAprobada = s.EstaAprobada,
+                FechaAprobacion = s.FechaAprobacion
             }).ToList();
-
-            return solicitudesDTO;
         }
+
+        // Implementación de GetSolicitudesHorasExtraByEmpleadoAsync
+        public async Task<IEnumerable<SolicitudHorasExtraDTO>> GetSolicitudesHorasExtraByEmpleadoAsync(int idEmpleado)
+        {
+            var solicitudes = await _context.SolicitudesHorasExtra
+                .Where(s => s.IdEmpleado == idEmpleado)
+                .ToListAsync();
+
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes de horas extra para el empleado con ID {IdEmpleado}.", solicitudes.Count, idEmpleado);
+
+            return solicitudes.Select(s => new SolicitudHorasExtraDTO
+            {
+                IdSolicitudHorasExtra = s.IdSolicitudHorasExtra,
+                IdEmpleado = s.IdEmpleado,
+                CantidadHoras = s.CantidadHoras,
+                FechaSolicitud = s.FechaSolicitud,
+                EstaAprobada = s.EstaAprobada,
+                FechaAprobacion = s.FechaAprobacion
+            }).ToList();
+        }
+
         private async Task<bool> ValidarSolicitudHorasExtra(SolicitudHorasExtraDTO solicitudDTO)
         {
             int jornadaOrdinaria = 8;

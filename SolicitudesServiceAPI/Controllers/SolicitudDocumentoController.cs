@@ -73,5 +73,17 @@ namespace SolicitudesService.API.Controllers
             var solicitudes = await _solicitudDocumentoService.GetAllSolicitudes();
             return Ok(solicitudes);
         }
+
+        // GET: api/SolicitudDocumento/empleado/{idEmpleado}
+        [HttpGet("empleado/{idEmpleado}")]
+        public async Task<ActionResult<IEnumerable<SolicitudDocumentoDTO>>> GetSolicitudesByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _solicitudDocumentoService.GetSolicitudesByEmpleado(idEmpleado);
+            if (solicitudes == null || !solicitudes.Any())
+            {
+                return NotFound("No se encontraron solicitudes de documentos para el empleado especificado.");
+            }
+            return Ok(solicitudes);
+        }
     }
 }

@@ -76,5 +76,17 @@ namespace SolicitudesService.API.Controllers
             var solicitudes = await _solicitudHorasExtraService.GetAllSolicitudesHorasExtraAsync();
             return Ok(solicitudes);
         }
+
+        // GET: api/SolicitudHorasExtra/empleado/{idEmpleado}
+        [HttpGet("empleado/{idEmpleado}")]
+        public async Task<ActionResult<IEnumerable<SolicitudHorasExtraDTO>>> GetSolicitudesHorasExtraByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _solicitudHorasExtraService.GetSolicitudesHorasExtraByEmpleadoAsync(idEmpleado);
+            if (solicitudes == null || !solicitudes.Any())
+            {
+                return NotFound("No se encontraron solicitudes de horas extra para el empleado especificado.");
+            }
+            return Ok(solicitudes);
+        }
     }
 }

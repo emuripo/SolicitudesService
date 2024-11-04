@@ -4,6 +4,9 @@ using SolicitudesService.Infrastructure.Data;
 using SolicitudesService.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SolicitudesService.Application.Services
 {
@@ -15,7 +18,7 @@ namespace SolicitudesService.Application.Services
         public SolicitudDocumentoService(SolicitudesServiceDbContext context, ILogger<SolicitudDocumentoService> logger)
         {
             _context = context;
-            _logger = logger; 
+            _logger = logger;
         }
 
         public async Task<IEnumerable<SolicitudDocumentoDTO>> GetAllSolicitudes()
@@ -30,7 +33,8 @@ namespace SolicitudesService.Application.Services
                 IdEmpleado = s.IdEmpleado,
                 Descripcion = s.Descripcion,
                 FechaSolicitud = s.FechaSolicitud,
-                EstaAprobada = s.EstaAprobada
+                EstaAprobada = s.EstaAprobada,
+                FechaAprobacion = s.FechaAprobacion
             }).ToList();
         }
 
@@ -52,7 +56,8 @@ namespace SolicitudesService.Application.Services
                 IdEmpleado = solicitud.IdEmpleado,
                 Descripcion = solicitud.Descripcion,
                 FechaSolicitud = solicitud.FechaSolicitud,
-                EstaAprobada = solicitud.EstaAprobada
+                EstaAprobada = solicitud.EstaAprobada,
+                FechaAprobacion = solicitud.FechaAprobacion
             };
         }
 
@@ -63,7 +68,8 @@ namespace SolicitudesService.Application.Services
                 IdEmpleado = solicitudDTO.IdEmpleado,
                 Descripcion = solicitudDTO.Descripcion,
                 FechaSolicitud = solicitudDTO.FechaSolicitud,
-                EstaAprobada = solicitudDTO.EstaAprobada
+                EstaAprobada = solicitudDTO.EstaAprobada,
+                FechaAprobacion = solicitudDTO.FechaAprobacion
             };
 
             _context.SolicitudesDocumentos.Add(solicitud);
@@ -90,6 +96,7 @@ namespace SolicitudesService.Application.Services
             solicitud.Descripcion = solicitudDTO.Descripcion;
             solicitud.FechaSolicitud = solicitudDTO.FechaSolicitud;
             solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
+            solicitud.FechaAprobacion = solicitudDTO.FechaAprobacion;
 
             _context.SolicitudesDocumentos.Update(solicitud);
             await _context.SaveChangesAsync();
@@ -115,6 +122,24 @@ namespace SolicitudesService.Application.Services
             _logger.LogInformation("Solicitud de documento con ID {Id} eliminada exitosamente.", id);
 
             return true;
+        }
+        public async Task<IEnumerable<SolicitudDocumentoDTO>> GetSolicitudesByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _context.SolicitudesDocumentos
+                .Where(s => s.IdEmpleado == idEmpleado)
+                .ToListAsync();
+
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes de documentos para el empleado con ID {IdEmpleado}.", solicitudes.Count, idEmpleado);
+
+            return solicitudes.Select(s => new SolicitudDocumentoDTO
+            {
+                IdSolicitudDocumento = s.IdSolicitudDocumento,
+                IdEmpleado = s.IdEmpleado,
+                Descripcion = s.Descripcion,
+                FechaSolicitud = s.FechaSolicitud,
+                EstaAprobada = s.EstaAprobada,
+                FechaAprobacion = s.FechaAprobacion
+            }).ToList();
         }
     }
 }

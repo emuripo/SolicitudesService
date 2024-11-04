@@ -4,10 +4,11 @@ namespace SolicitudesService.Application.DTO
 {
     public class SolicitudHorasExtraDTO
     {
-        public int IdSolicitudHorasExtra { get; set; } 
-        public int IdEmpleado { get; set; } 
-        public int CantidadHoras { get; set; } 
-        public DateTime FechaSolicitud { get; set; } 
-        public bool EstaAprobada { get; set; } 
+        public int IdSolicitudHorasExtra { get; set; }
+        public int IdEmpleado { get; set; }
+        public int CantidadHoras { get; set; }
+        public DateTime FechaSolicitud { get; set; }
+        public bool EstaAprobada { get; set; }
+        public DateTime? FechaAprobacion { get; set; } 
     }
 }

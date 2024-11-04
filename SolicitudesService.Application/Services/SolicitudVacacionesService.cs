@@ -126,6 +126,25 @@ namespace SolicitudesService.Application.Services
             _logger.LogInformation("Solicitud de vacaciones con ID {Id} eliminada exitosamente.", id);
 
             return true;
+        } 
+        public async Task<IEnumerable<SolicitudVacacionesDTO>> GetSolicitudesByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _context.SolicitudesVacaciones
+                .Where(s => s.IdEmpleado == idEmpleado)
+                .ToListAsync();
+
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes de vacaciones para el empleado con ID {IdEmpleado}.", solicitudes.Count, idEmpleado);
+
+            return solicitudes.Select(s => new SolicitudVacacionesDTO
+            {
+                IdSolicitudVacaciones = s.IdSolicitudVacaciones,
+                IdEmpleado = s.IdEmpleado,
+                FechaInicio = s.FechaInicio,
+                FechaFin = s.FechaFin,
+                FechaSolicitud = s.FechaSolicitud,
+                EstaAprobada = s.EstaAprobada,
+                FechaAprobacion = s.FechaAprobacion
+            }).ToList();
         }
     }
 }

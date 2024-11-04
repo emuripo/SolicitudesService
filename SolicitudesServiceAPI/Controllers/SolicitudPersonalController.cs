@@ -4,7 +4,7 @@ using SolicitudesService.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SolicitudesService.Application.Services;
+using System.Linq;
 
 namespace SolicitudesService.API.Controllers
 {
@@ -84,6 +84,21 @@ namespace SolicitudesService.API.Controllers
 
             _logger.LogInformation("Solicitud personal con ID {IdSolicitudPersonal} eliminada exitosamente.", id);
             return NoContent();
+        }
+
+        // GET: api/SolicitudPersonal/empleado/{idEmpleado}
+        [HttpGet("empleado/{idEmpleado}")]
+        public async Task<ActionResult<IEnumerable<SolicitudPersonalDTO>>> GetSolicitudesByEmpleado(int idEmpleado)
+        {
+            var solicitudes = await _solicitudPersonalService.GetSolicitudesByEmpleado(idEmpleado);
+            if (solicitudes == null || !solicitudes.Any())
+            {
+                _logger.LogWarning("No se encontraron solicitudes personales para el empleado con ID {idEmpleado}.", idEmpleado);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Se obtuvieron {Count} solicitudes personales para el empleado con ID {IdEmpleado}.", solicitudes.Count(), idEmpleado);
+            return Ok(solicitudes);
         }
     }
 }
