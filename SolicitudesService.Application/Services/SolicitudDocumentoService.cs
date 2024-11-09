@@ -1,14 +1,15 @@
-﻿using SolicitudesService.Application.DTO;
-using SolicitudesService.Application.Interfaces;
-using SolicitudesService.Infrastructure.Data;
-using SolicitudesService.Core.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using SolicitudesService.Application.DTO;
+using SolicitudesService.Core.Entities;
+using SolicitudesService.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using SolicitudesService.Infrastructure.Data;
 
-namespace SolicitudesService.Application.Services
+namespace SolicitudesService.Services
 {
     public class SolicitudDocumentoService : ISolicitudDocumentoService
     {
@@ -21,125 +22,122 @@ namespace SolicitudesService.Application.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<SolicitudDocumentoDTO>> GetAllSolicitudes()
-        {
-            var solicitudes = await _context.SolicitudesDocumentos.ToListAsync();
-
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes de documentos.", solicitudes.Count);
-
-            return solicitudes.Select(s => new SolicitudDocumentoDTO
-            {
-                IdSolicitudDocumento = s.IdSolicitudDocumento,
-                IdEmpleado = s.IdEmpleado,
-                Descripcion = s.Descripcion,
-                FechaSolicitud = s.FechaSolicitud,
-                EstaAprobada = s.EstaAprobada,
-                FechaAprobacion = s.FechaAprobacion
-            }).ToList();
-        }
-
-        public async Task<SolicitudDocumentoDTO> GetSolicitudById(int id)
-        {
-            var solicitud = await _context.SolicitudesDocumentos.FindAsync(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud de documento con ID {Id} no fue encontrada.", id);
-                return null;
-            }
-
-            _logger.LogInformation("Solicitud de documento con ID {Id} fue obtenida exitosamente.", id);
-
-            return new SolicitudDocumentoDTO
-            {
-                IdSolicitudDocumento = solicitud.IdSolicitudDocumento,
-                IdEmpleado = solicitud.IdEmpleado,
-                Descripcion = solicitud.Descripcion,
-                FechaSolicitud = solicitud.FechaSolicitud,
-                EstaAprobada = solicitud.EstaAprobada,
-                FechaAprobacion = solicitud.FechaAprobacion
-            };
-        }
-
-        public async Task<SolicitudDocumentoDTO> CreateSolicitud(SolicitudDocumentoDTO solicitudDTO)
+        public async Task<SolicitudDocumentoDTO> CrearSolicitudAsync(SolicitudDocumentoDTO solicitudDTO)
         {
             var solicitud = new SolicitudDocumentos
             {
                 IdEmpleado = solicitudDTO.IdEmpleado,
+                TipoDocumento = solicitudDTO.TipoDocumento,
                 Descripcion = solicitudDTO.Descripcion,
-                FechaSolicitud = solicitudDTO.FechaSolicitud,
-                EstaAprobada = solicitudDTO.EstaAprobada,
-                FechaAprobacion = solicitudDTO.FechaAprobacion
+                FechaSolicitud = DateTime.Now,
+                Estado = "Pendiente",
+                CreadoPor = solicitudDTO.ModificadoPor ?? "UsuarioDesconocido"
             };
 
-            _context.SolicitudesDocumentos.Add(solicitud);
+            _context.SolicitudDocumentos.Add(solicitud);
             await _context.SaveChangesAsync();
 
-            solicitudDTO.IdSolicitudDocumento = solicitud.IdSolicitudDocumento;
-
-            _logger.LogInformation("Solicitud de documento creada exitosamente con ID {Id}.", solicitud.IdSolicitudDocumento);
-
+            solicitudDTO.Id = solicitud.Id;
             return solicitudDTO;
         }
 
-        public async Task<bool> UpdateSolicitud(int id, SolicitudDocumentoDTO solicitudDTO)
+        public async Task<SolicitudDocumentoDTO?> ObtenerSolicitudPorIdAsync(int id)
         {
-            var solicitud = await _context.SolicitudesDocumentos.FindAsync(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud de documento con ID {Id} no fue encontrada.", id);
-                return false;
-            }
-
-            solicitud.IdEmpleado = solicitudDTO.IdEmpleado;
-            solicitud.Descripcion = solicitudDTO.Descripcion;
-            solicitud.FechaSolicitud = solicitudDTO.FechaSolicitud;
-            solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
-            solicitud.FechaAprobacion = solicitudDTO.FechaAprobacion;
-
-            _context.SolicitudesDocumentos.Update(solicitud);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Solicitud de documento con ID {Id} actualizada exitosamente.", id);
-
-            return true;
+            var solicitud = await _context.SolicitudDocumentos.FindAsync(id);
+            return solicitud == null ? null : MapToDTO(solicitud);
         }
 
-        public async Task<bool> DeleteSolicitud(int id)
+        public async Task<IEnumerable<SolicitudDocumentoDTO>> ObtenerSolicitudesPorEmpleadoAsync(int idEmpleado)
         {
-            var solicitud = await _context.SolicitudesDocumentos.FindAsync(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud de documento con ID {Id} no fue encontrada.", id);
-                return false;
-            }
-
-            _context.SolicitudesDocumentos.Remove(solicitud);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Solicitud de documento con ID {Id} eliminada exitosamente.", id);
-
-            return true;
-        }
-        public async Task<IEnumerable<SolicitudDocumentoDTO>> GetSolicitudesByEmpleado(int idEmpleado)
-        {
-            var solicitudes = await _context.SolicitudesDocumentos
+            var solicitudes = await _context.SolicitudDocumentos
                 .Where(s => s.IdEmpleado == idEmpleado)
                 .ToListAsync();
 
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes de documentos para el empleado con ID {IdEmpleado}.", solicitudes.Count, idEmpleado);
+            return solicitudes.Select(MapToDTO);
+        }
 
-            return solicitudes.Select(s => new SolicitudDocumentoDTO
+        public async Task<bool> ActualizarSolicitudAsync(SolicitudDocumentoDTO solicitudDTO)
+        {
+            var solicitud = await _context.SolicitudDocumentos.FindAsync(solicitudDTO.Id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
             {
-                IdSolicitudDocumento = s.IdSolicitudDocumento,
-                IdEmpleado = s.IdEmpleado,
-                Descripcion = s.Descripcion,
-                FechaSolicitud = s.FechaSolicitud,
-                EstaAprobada = s.EstaAprobada,
-                FechaAprobacion = s.FechaAprobacion
-            }).ToList();
+                return false;
+            }
+
+            solicitud.TipoDocumento = solicitudDTO.TipoDocumento;
+            solicitud.Descripcion = solicitudDTO.Descripcion;
+            solicitud.FechaModificacion = DateTime.Now;
+            solicitud.ModificadoPor = solicitudDTO.ModificadoPor;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> EliminarSolicitudAsync(int id)
+        {
+            var solicitud = await _context.SolicitudDocumentos.FindAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+            {
+                return false;
+            }
+
+            _context.SolicitudDocumentos.Remove(solicitud);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> AprobarSolicitudAsync(int id)
+        {
+            var solicitud = await _context.SolicitudDocumentos.FindAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+            {
+                return false;
+            }
+
+            solicitud.Estado = "Aprobada";
+            solicitud.FechaCambioEstado = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RechazarSolicitudAsync(int id, string motivoRechazo)
+        {
+            var solicitud = await _context.SolicitudDocumentos.FindAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+            {
+                return false;
+            }
+
+            solicitud.Estado = "Rechazada";
+            solicitud.FechaCambioEstado = DateTime.Now;
+            solicitud.MotivoRechazo = motivoRechazo; // Guardar el motivo de rechazo
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IEnumerable<SolicitudDocumentoDTO>> ObtenerTodasSolicitudesAsync()
+        {
+            var solicitudes = await _context.SolicitudDocumentos.ToListAsync();
+            return solicitudes.Select(MapToDTO);
+        }
+
+        // Método de mapeo para convertir la entidad a DTO
+        private SolicitudDocumentoDTO MapToDTO(SolicitudDocumentos solicitud)
+        {
+            return new SolicitudDocumentoDTO
+            {
+                Id = solicitud.Id,
+                IdEmpleado = solicitud.IdEmpleado,
+                TipoDocumento = solicitud.TipoDocumento,
+                Descripcion = solicitud.Descripcion,
+                FechaSolicitud = solicitud.FechaSolicitud,
+                Estado = solicitud.Estado,
+                FechaCambioEstado = solicitud.FechaCambioEstado,
+                MotivoRechazo = solicitud.MotivoRechazo, 
+                ModificadoPor = solicitud.ModificadoPor
+            };
         }
     }
 }

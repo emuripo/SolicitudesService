@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SolicitudesService.Application.DTO;
-using SolicitudesService.Application.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SolicitudesService.Application.DTO;
+using SolicitudesService.Interfaces;
 
-namespace SolicitudesService.API.Controllers
+namespace SolicitudesServiceAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class SolicitudDocumentoController : ControllerBase
     {
         private readonly ISolicitudDocumentoService _solicitudDocumentoService;
@@ -19,70 +19,119 @@ namespace SolicitudesService.API.Controllers
 
         // POST: api/SolicitudDocumento
         [HttpPost]
-        public async Task<ActionResult<SolicitudDocumentoDTO>> CreateSolicitudDocumento([FromBody] SolicitudDocumentoDTO solicitudDTO)
+        public async Task<IActionResult> CrearSolicitud([FromBody] SolicitudDocumentoDTO solicitudDTO)
         {
-            var solicitud = await _solicitudDocumentoService.CreateSolicitud(solicitudDTO);
-            if (solicitud == null)
-            {
-                return BadRequest("No se pudo crear la solicitud de documento.");
-            }
+            if (solicitudDTO == null)
+                return BadRequest("La solicitud no puede estar vacía.");
 
-            return CreatedAtAction(nameof(GetSolicitudDocumento), new { id = solicitud.IdSolicitudDocumento }, solicitud);
+            if (solicitudDTO.IdEmpleado <= 0)
+                return BadRequest("Debe especificar un ID de empleado válido.");
+
+            if (string.IsNullOrWhiteSpace(solicitudDTO.TipoDocumento))
+                return BadRequest("El tipo de documento es obligatorio.");
+
+            var result = await _solicitudDocumentoService.CrearSolicitudAsync(solicitudDTO);
+            return CreatedAtAction(nameof(ObtenerSolicitudPorId), new { id = result.Id }, result);
         }
 
-        // PUT: api/SolicitudDocumento/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSolicitudDocumento(int id, [FromBody] SolicitudDocumentoDTO solicitudDTO)
-        {
-            var result = await _solicitudDocumentoService.UpdateSolicitud(id, solicitudDTO);
-            if (!result)
-            {
-                return NotFound("No se encontró la solicitud de documento para actualizar.");
-            }
-            return NoContent();
-        }
-
-        // GET: api/SolicitudDocumento/5
+        // GET: api/SolicitudDocumento/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<SolicitudDocumentoDTO>> GetSolicitudDocumento(int id)
+        public async Task<IActionResult> ObtenerSolicitudPorId(int id)
         {
-            var solicitud = await _solicitudDocumentoService.GetSolicitudById(id);
+            if (id <= 0)
+                return BadRequest("El ID de solicitud debe ser un número positivo.");
+
+            var solicitud = await _solicitudDocumentoService.ObtenerSolicitudPorIdAsync(id);
             if (solicitud == null)
-            {
-                return NotFound("No se encontró la solicitud de documento.");
-            }
+                return NotFound("Solicitud no encontrada.");
+
             return Ok(solicitud);
-        }
-
-        // DELETE: api/SolicitudDocumento/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSolicitudDocumento(int id)
-        {
-            var result = await _solicitudDocumentoService.DeleteSolicitud(id);
-            if (!result)
-            {
-                return NotFound("No se encontró la solicitud de documento para eliminar.");
-            }
-            return NoContent();
-        }
-
-        // GET: api/SolicitudDocumento
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<SolicitudDocumentoDTO>>> GetAllSolicitudesDocumentos()
-        {
-            var solicitudes = await _solicitudDocumentoService.GetAllSolicitudes();
-            return Ok(solicitudes);
         }
 
         // GET: api/SolicitudDocumento/empleado/{idEmpleado}
         [HttpGet("empleado/{idEmpleado}")]
-        public async Task<ActionResult<IEnumerable<SolicitudDocumentoDTO>>> GetSolicitudesByEmpleado(int idEmpleado)
+        public async Task<IActionResult> ObtenerSolicitudesPorEmpleado(int idEmpleado)
         {
-            var solicitudes = await _solicitudDocumentoService.GetSolicitudesByEmpleado(idEmpleado);
+            if (idEmpleado <= 0)
+                return BadRequest("El ID del empleado debe ser un número positivo.");
+
+            var solicitudes = await _solicitudDocumentoService.ObtenerSolicitudesPorEmpleadoAsync(idEmpleado);
+            return Ok(solicitudes);
+        }
+
+        // PUT: api/SolicitudDocumento
+        [HttpPut]
+        public async Task<IActionResult> ActualizarSolicitud([FromBody] SolicitudDocumentoDTO solicitudDTO)
+        {
+            if (solicitudDTO == null)
+                return BadRequest("La solicitud no puede estar vacía.");
+
+            if (solicitudDTO.Id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            if (string.IsNullOrWhiteSpace(solicitudDTO.TipoDocumento))
+                return BadRequest("El tipo de documento es obligatorio.");
+
+            var updated = await _solicitudDocumentoService.ActualizarSolicitudAsync(solicitudDTO);
+            if (!updated)
+                return NotFound("No se pudo actualizar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // DELETE: api/SolicitudDocumento/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> EliminarSolicitud(int id)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            var deleted = await _solicitudDocumentoService.EliminarSolicitudAsync(id);
+            if (!deleted)
+                return NotFound("No se pudo eliminar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // PUT: api/SolicitudDocumento/aprobar/{id}
+        [HttpPut("aprobar/{id}")]
+        public async Task<IActionResult> AprobarSolicitud(int id)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            var approved = await _solicitudDocumentoService.AprobarSolicitudAsync(id);
+            if (!approved)
+                return NotFound("No se pudo aprobar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // PUT: api/SolicitudDocumento/rechazar/{id}
+        [HttpPut("rechazar/{id}")]
+        public async Task<IActionResult> RechazarSolicitud(int id, [FromQuery] string motivoRechazo)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            if (string.IsNullOrWhiteSpace(motivoRechazo))
+                return BadRequest("Debe proporcionar un motivo de rechazo.");
+
+            var rejected = await _solicitudDocumentoService.RechazarSolicitudAsync(id, motivoRechazo);
+            if (!rejected)
+                return NotFound("No se pudo rechazar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // GET: api/SolicitudDocumento/todas
+        [HttpGet("todas")]
+        public async Task<IActionResult> ObtenerTodasSolicitudes()
+        {
+            var solicitudes = await _solicitudDocumentoService.ObtenerTodasSolicitudesAsync();
             if (solicitudes == null || !solicitudes.Any())
-            {
-                return NotFound("No se encontraron solicitudes de documentos para el empleado especificado.");
-            }
+                return NotFound("No se encontraron solicitudes.");
+
             return Ok(solicitudes);
         }
     }

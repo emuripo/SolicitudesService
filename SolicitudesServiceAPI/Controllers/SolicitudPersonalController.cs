@@ -1,103 +1,140 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SolicitudesService.Application.DTO;
-using SolicitudesService.Application.Interfaces;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Linq;
+using SolicitudesService.Application.DTO;
+using SolicitudesService.Interfaces;
 
-namespace SolicitudesService.API.Controllers
+namespace SolicitudesServiceAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class SolicitudPersonalController : ControllerBase
     {
         private readonly ISolicitudPersonalService _solicitudPersonalService;
-        private readonly ILogger<SolicitudPersonalController> _logger;
 
-        public SolicitudPersonalController(ISolicitudPersonalService solicitudPersonalService, ILogger<SolicitudPersonalController> logger)
+        public SolicitudPersonalController(ISolicitudPersonalService solicitudPersonalService)
         {
             _solicitudPersonalService = solicitudPersonalService;
-            _logger = logger;
-        }
-
-        // GET: api/SolicitudPersonal
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<SolicitudPersonalDTO>>> GetAllSolicitudes()
-        {
-            var solicitudes = await _solicitudPersonalService.GetAllSolicitudes();
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes personales.", solicitudes.Count());
-            return Ok(solicitudes);
-        }
-
-        // GET: api/SolicitudPersonal/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<SolicitudPersonalDTO>> GetSolicitudById(int id)
-        {
-            var solicitud = await _solicitudPersonalService.GetSolicitudById(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
-                return NotFound();
-            }
-
-            return Ok(solicitud);
         }
 
         // POST: api/SolicitudPersonal
         [HttpPost]
-        public async Task<ActionResult<SolicitudPersonalDTO>> CreateSolicitud([FromBody] SolicitudPersonalDTO solicitudDTO)
+        public async Task<IActionResult> CrearSolicitud([FromBody] SolicitudPersonalDTO solicitudDTO)
         {
-            var nuevaSolicitud = await _solicitudPersonalService.CreateSolicitud(solicitudDTO);
-            _logger.LogInformation("Solicitud personal creada exitosamente con ID {IdSolicitudPersonal}", nuevaSolicitud.IdSolicitudPersonal);
-            return CreatedAtAction(nameof(GetSolicitudById), new { id = nuevaSolicitud.IdSolicitudPersonal }, nuevaSolicitud);
+            if (solicitudDTO == null)
+                return BadRequest("La solicitud no puede estar vacía.");
+
+            if (solicitudDTO.IdEmpleado <= 0)
+                return BadRequest("Debe especificar un ID de empleado válido.");
+
+            if (string.IsNullOrWhiteSpace(solicitudDTO.Motivo))
+                return BadRequest("El motivo de la solicitud es obligatorio.");
+
+            var result = await _solicitudPersonalService.CrearSolicitudAsync(solicitudDTO);
+            return CreatedAtAction(nameof(ObtenerSolicitudPorId), new { id = result.Id }, result);
         }
 
-        // PUT: api/SolicitudPersonal/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSolicitud(int id, [FromBody] SolicitudPersonalDTO solicitudDTO)
+        // GET: api/SolicitudPersonal/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> ObtenerSolicitudPorId(int id)
         {
-            var result = await _solicitudPersonalService.UpdateSolicitud(id, solicitudDTO);
+            if (id <= 0)
+                return BadRequest("El ID de solicitud debe ser un número positivo.");
 
-            if (!result)
-            {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada para actualizar.", id);
-                return NotFound();
-            }
+            var solicitud = await _solicitudPersonalService.ObtenerSolicitudPorIdAsync(id);
+            if (solicitud == null)
+                return NotFound("Solicitud no encontrada.");
 
-            _logger.LogInformation("Solicitud personal con ID {IdSolicitudPersonal} actualizada exitosamente.", id);
-            return NoContent();
-        }
-
-        // DELETE: api/SolicitudPersonal/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSolicitud(int id)
-        {
-            var result = await _solicitudPersonalService.DeleteSolicitud(id);
-
-            if (!result)
-            {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada para eliminar.", id);
-                return NotFound();
-            }
-
-            _logger.LogInformation("Solicitud personal con ID {IdSolicitudPersonal} eliminada exitosamente.", id);
-            return NoContent();
+            return Ok(solicitud);
         }
 
         // GET: api/SolicitudPersonal/empleado/{idEmpleado}
         [HttpGet("empleado/{idEmpleado}")]
-        public async Task<ActionResult<IEnumerable<SolicitudPersonalDTO>>> GetSolicitudesByEmpleado(int idEmpleado)
+        public async Task<IActionResult> ObtenerSolicitudesPorEmpleado(int idEmpleado)
         {
-            var solicitudes = await _solicitudPersonalService.GetSolicitudesByEmpleado(idEmpleado);
-            if (solicitudes == null || !solicitudes.Any())
-            {
-                _logger.LogWarning("No se encontraron solicitudes personales para el empleado con ID {idEmpleado}.", idEmpleado);
-                return NotFound();
-            }
+            if (idEmpleado <= 0)
+                return BadRequest("El ID del empleado debe ser un número positivo.");
 
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes personales para el empleado con ID {IdEmpleado}.", solicitudes.Count(), idEmpleado);
+            var solicitudes = await _solicitudPersonalService.ObtenerSolicitudesPorEmpleadoAsync(idEmpleado);
+            if (solicitudes == null || !solicitudes.Any())
+                return NotFound("No se encontraron solicitudes para el empleado especificado.");
+
+            return Ok(solicitudes);
+        }
+
+        // PUT: api/SolicitudPersonal
+        [HttpPut]
+        public async Task<IActionResult> ActualizarSolicitud([FromBody] SolicitudPersonalDTO solicitudDTO)
+        {
+            if (solicitudDTO == null)
+                return BadRequest("La solicitud no puede estar vacía.");
+
+            if (solicitudDTO.Id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            if (string.IsNullOrWhiteSpace(solicitudDTO.Motivo))
+                return BadRequest("El motivo de la solicitud es obligatorio.");
+
+            var updated = await _solicitudPersonalService.ActualizarSolicitudAsync(solicitudDTO);
+            if (!updated)
+                return NotFound("No se pudo actualizar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // DELETE: api/SolicitudPersonal/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> EliminarSolicitud(int id)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            var deleted = await _solicitudPersonalService.EliminarSolicitudAsync(id);
+            if (!deleted)
+                return NotFound("No se pudo eliminar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // PUT: api/SolicitudPersonal/aprobar/{id}
+        [HttpPut("aprobar/{id}")]
+        public async Task<IActionResult> AprobarSolicitud(int id)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            var approved = await _solicitudPersonalService.AprobarSolicitudAsync(id);
+            if (!approved)
+                return NotFound("No se pudo aprobar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // PUT: api/SolicitudPersonal/rechazar/{id}
+        [HttpPut("rechazar/{id}")]
+        public async Task<IActionResult> RechazarSolicitud(int id, [FromQuery] string motivoRechazo)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de la solicitud debe ser un número positivo.");
+
+            if (string.IsNullOrWhiteSpace(motivoRechazo))
+                return BadRequest("Debe proporcionar un motivo de rechazo.");
+
+            var rejected = await _solicitudPersonalService.RechazarSolicitudAsync(id, motivoRechazo);
+            if (!rejected)
+                return NotFound("No se pudo rechazar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+
+            return NoContent();
+        }
+
+        // GET: api/SolicitudPersonal/todas
+        [HttpGet("todas")]
+        public async Task<IActionResult> ObtenerTodasSolicitudes()
+        {
+            var solicitudes = await _solicitudPersonalService.ObtenerTodasSolicitudesAsync();
+            if (solicitudes == null || !solicitudes.Any())
+                return NotFound("No se encontraron solicitudes.");
+
             return Ok(solicitudes);
         }
     }

@@ -1,14 +1,15 @@
-﻿using SolicitudesService.Application.DTO;
-using SolicitudesService.Application.Interfaces;
-using SolicitudesService.Infrastructure.Data;
-using SolicitudesService.Core.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using SolicitudesService.Application.DTO;
+using SolicitudesService.Core.Entities;
+using SolicitudesService.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using SolicitudesService.Infrastructure.Data;
 
-namespace SolicitudesService.Application.Services
+namespace SolicitudesService.Services
 {
     public class SolicitudPersonalService : ISolicitudPersonalService
     {
@@ -21,123 +22,119 @@ namespace SolicitudesService.Application.Services
             _logger = logger;
         }
 
-        public async Task<SolicitudPersonalDTO> CreateSolicitud(SolicitudPersonalDTO solicitudDTO)
+        public async Task<SolicitudPersonalDTO> CrearSolicitudAsync(SolicitudPersonalDTO solicitudDTO)
         {
             var solicitud = new SolicitudPersonal
             {
                 IdEmpleado = solicitudDTO.IdEmpleado,
-                Descripcion = solicitudDTO.Descripcion,
-                FechaSolicitud = solicitudDTO.FechaSolicitud,
-                EstaAprobada = solicitudDTO.EstaAprobada,
-                FechaAprobacion = solicitudDTO.FechaAprobacion
+                Motivo = solicitudDTO.Motivo,
+                FechaSolicitud = DateTime.Now,
+                Estado = "Pendiente",
+                CreadoPor = solicitudDTO.ModificadoPor ?? "UsuarioDesconocido"
             };
 
             _context.SolicitudesPersonales.Add(solicitud);
             await _context.SaveChangesAsync();
 
-            solicitudDTO.IdSolicitudPersonal = solicitud.IdSolicitudPersonal;
-
-            _logger.LogInformation("Solicitud personal creada exitosamente con ID {IdSolicitudPersonal}", solicitud.IdSolicitudPersonal);
-
+            solicitudDTO.Id = solicitud.Id;
             return solicitudDTO;
         }
 
-        public async Task<bool> UpdateSolicitud(int id, SolicitudPersonalDTO solicitudDTO)
+        public async Task<SolicitudPersonalDTO?> ObtenerSolicitudPorIdAsync(int id)
         {
             var solicitud = await _context.SolicitudesPersonales.FindAsync(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
-                return false;
-            }
-
-            solicitud.Descripcion = solicitudDTO.Descripcion;
-            solicitud.FechaSolicitud = solicitudDTO.FechaSolicitud;
-            solicitud.EstaAprobada = solicitudDTO.EstaAprobada;
-            solicitud.FechaAprobacion = solicitudDTO.FechaAprobacion;
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Solicitud personal con ID {IdSolicitudPersonal} actualizada exitosamente.", solicitud.IdSolicitudPersonal);
-
-            return true;
+            return solicitud == null ? null : MapToDTO(solicitud);
         }
 
-        public async Task<bool> DeleteSolicitud(int id)
-        {
-            var solicitud = await _context.SolicitudesPersonales.FindAsync(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
-                return false;
-            }
-
-            _context.SolicitudesPersonales.Remove(solicitud);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Solicitud personal con ID {IdSolicitudPersonal} eliminada exitosamente.", solicitud.IdSolicitudPersonal);
-
-            return true;
-        }
-
-        public async Task<SolicitudPersonalDTO?> GetSolicitudById(int id)
-        {
-            var solicitud = await _context.SolicitudesPersonales.FindAsync(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("Solicitud personal con ID {id} no fue encontrada.", id);
-                return null;
-            }
-
-            return new SolicitudPersonalDTO
-            {
-                IdSolicitudPersonal = solicitud.IdSolicitudPersonal,
-                IdEmpleado = solicitud.IdEmpleado,
-                Descripcion = solicitud.Descripcion,
-                FechaSolicitud = solicitud.FechaSolicitud,
-                EstaAprobada = solicitud.EstaAprobada,
-                FechaAprobacion = solicitud.FechaAprobacion
-            };
-        }
-
-        public async Task<IEnumerable<SolicitudPersonalDTO>> GetAllSolicitudes()
-        {
-            var solicitudes = await _context.SolicitudesPersonales.ToListAsync();
-
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes personales.", solicitudes.Count);
-
-            return solicitudes.Select(s => new SolicitudPersonalDTO
-            {
-                IdSolicitudPersonal = s.IdSolicitudPersonal,
-                IdEmpleado = s.IdEmpleado,
-                Descripcion = s.Descripcion,
-                FechaSolicitud = s.FechaSolicitud,
-                EstaAprobada = s.EstaAprobada,
-                FechaAprobacion = s.FechaAprobacion
-            }).ToList();
-        }
-
-        // Implementación del nuevo método para obtener solicitudes por idEmpleado
-        public async Task<IEnumerable<SolicitudPersonalDTO>> GetSolicitudesByEmpleado(int idEmpleado)
+        public async Task<IEnumerable<SolicitudPersonalDTO>> ObtenerSolicitudesPorEmpleadoAsync(int idEmpleado)
         {
             var solicitudes = await _context.SolicitudesPersonales
                 .Where(s => s.IdEmpleado == idEmpleado)
                 .ToListAsync();
 
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes personales para el empleado con ID {IdEmpleado}.", solicitudes.Count, idEmpleado);
+            return solicitudes.Select(MapToDTO);
+        }
 
-            return solicitudes.Select(s => new SolicitudPersonalDTO
+        public async Task<bool> ActualizarSolicitudAsync(SolicitudPersonalDTO solicitudDTO)
+        {
+            var solicitud = await _context.SolicitudesPersonales.FindAsync(solicitudDTO.Id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
             {
-                IdSolicitudPersonal = s.IdSolicitudPersonal,
-                IdEmpleado = s.IdEmpleado,
-                Descripcion = s.Descripcion,
-                FechaSolicitud = s.FechaSolicitud,
-                EstaAprobada = s.EstaAprobada,
-                FechaAprobacion = s.FechaAprobacion
-            }).ToList();
+                return false;
+            }
+
+            solicitud.Motivo = solicitudDTO.Motivo;
+            solicitud.FechaModificacion = DateTime.Now;
+            solicitud.ModificadoPor = solicitudDTO.ModificadoPor;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> EliminarSolicitudAsync(int id)
+        {
+            var solicitud = await _context.SolicitudesPersonales.FindAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+            {
+                return false;
+            }
+
+            _context.SolicitudesPersonales.Remove(solicitud);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> AprobarSolicitudAsync(int id)
+        {
+            var solicitud = await _context.SolicitudesPersonales.FindAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+            {
+                return false;
+            }
+
+            solicitud.Estado = "Aprobada";
+            solicitud.FechaCambioEstado = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RechazarSolicitudAsync(int id, string motivoRechazo)
+        {
+            var solicitud = await _context.SolicitudesPersonales.FindAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+            {
+                return false;
+            }
+
+            solicitud.Estado = "Rechazada";
+            solicitud.FechaCambioEstado = DateTime.Now;
+            solicitud.MotivoRechazo = motivoRechazo;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IEnumerable<SolicitudPersonalDTO>> ObtenerTodasSolicitudesAsync()
+        {
+            var solicitudes = await _context.SolicitudesPersonales.ToListAsync();
+            return solicitudes.Select(MapToDTO);
+        }
+
+        // Método de mapeo para convertir la entidad a DTO
+        private SolicitudPersonalDTO MapToDTO(SolicitudPersonal solicitud)
+        {
+            return new SolicitudPersonalDTO
+            {
+                Id = solicitud.Id,
+                IdEmpleado = solicitud.IdEmpleado,
+                Motivo = solicitud.Motivo,
+                FechaSolicitud = solicitud.FechaSolicitud,
+                Estado = solicitud.Estado,
+                FechaCambioEstado = solicitud.FechaCambioEstado,
+                MotivoRechazo = solicitud.MotivoRechazo,
+                ModificadoPor = solicitud.ModificadoPor
+            };
         }
     }
 }

@@ -1,16 +1,42 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace SolicitudesService.Core.Entities
 {
     public class SolicitudDocumentos
     {
         [Key]
-        public int IdSolicitudDocumento { get; set; }
+        public int Id { get; set; }
+
+        [Required]
         public int IdEmpleado { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string TipoDocumento { get; set; } = string.Empty;
+
+        [MaxLength(250)]
         public string Descripcion { get; set; } = string.Empty;
+
+        [Required]
         public DateTime FechaSolicitud { get; set; }
-        public bool EstaAprobada { get; set; }
-        public DateTime? FechaAprobacion { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string Estado { get; set; } = "Pendiente"; 
+
+        public DateTime? FechaCambioEstado { get; set; }
+
+        [MaxLength(250)]
+        public string MotivoRechazo { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string CreadoPor { get; set; } = string.Empty;
+
+        public DateTime FechaCreacion { get; set; } = DateTime.Now;
+
+        [MaxLength(100)]
+        public string? ModificadoPor { get; set; }
+
+        public DateTime? FechaModificacion { get; set; }
     }
 }

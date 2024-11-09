@@ -1,16 +1,18 @@
-﻿using SolicitudesService.Application.DTO;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using SolicitudesService.Application.DTO;
 
-namespace SolicitudesService.Application.Interfaces
+namespace SolicitudesService.Interfaces
 {
     public interface ISolicitudVacacionesService
     {
-        Task<IEnumerable<SolicitudVacacionesDTO>> GetAllSolicitudes();
-        Task<SolicitudVacacionesDTO> GetSolicitudById(int id);
-        Task<SolicitudVacacionesDTO> CreateSolicitud(SolicitudVacacionesDTO solicitud);
-        Task<bool> UpdateSolicitud(int id, SolicitudVacacionesDTO solicitud);
-        Task<bool> DeleteSolicitud(int id);
-        Task<IEnumerable<SolicitudVacacionesDTO>> GetSolicitudesByEmpleado(int idEmpleado);
+        Task<SolicitudVacacionesDTO> CrearSolicitudAsync(SolicitudVacacionesDTO solicitudDTO);
+        Task<SolicitudVacacionesDTO?> ObtenerSolicitudPorIdAsync(int id);
+        Task<IEnumerable<SolicitudVacacionesDTO>> ObtenerSolicitudesPorEmpleadoAsync(int idEmpleado);
+        Task<bool> ActualizarSolicitudAsync(SolicitudVacacionesDTO solicitudDTO);
+        Task<bool> EliminarSolicitudAsync(int id);
+        Task<bool> AprobarSolicitudAsync(int id);
+        Task<bool> RechazarSolicitudAsync(int id, string motivoRechazo);
+        Task<IEnumerable<SolicitudVacacionesDTO>> ObtenerTodasSolicitudesAsync();
     }
 }

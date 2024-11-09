@@ -1,16 +1,19 @@
-﻿using System.Threading.Tasks;
+﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using SolicitudesService.Application.DTO;
 
-namespace SolicitudesService.Application.Interfaces
+namespace SolicitudesService.Interfaces
 {
     public interface ISolicitudHorasExtraService
     {
-        Task<SolicitudHorasExtraDTO> CreateSolicitudHorasExtraAsync(SolicitudHorasExtraDTO solicitudDTO);
-        Task<SolicitudHorasExtraDTO> UpdateSolicitudHorasExtraAsync(int id, SolicitudHorasExtraDTO solicitudDTO);
-        Task<bool> DeleteSolicitudHorasExtraAsync(int id);
-        Task<SolicitudHorasExtraDTO?> GetSolicitudHorasExtraByIdAsync(int id);
-        Task<IEnumerable<SolicitudHorasExtraDTO>> GetAllSolicitudesHorasExtraAsync();
-        Task<IEnumerable<SolicitudHorasExtraDTO>> GetSolicitudesHorasExtraByEmpleadoAsync(int idEmpleado);
+        Task<SolicitudHorasExtraDTO> CrearSolicitudAsync(SolicitudHorasExtraDTO solicitudDTO);
+        Task<SolicitudHorasExtraDTO?> ObtenerSolicitudPorIdAsync(int id);
+        Task<IEnumerable<SolicitudHorasExtraDTO>> ObtenerSolicitudesPorEmpleadoAsync(int idEmpleado);
+        Task<bool> ActualizarSolicitudAsync(SolicitudHorasExtraDTO solicitudDTO);
+        Task<bool> EliminarSolicitudAsync(int id);
+        Task<bool> AprobarSolicitudAsync(int id);
+        Task<bool> RechazarSolicitudAsync(int id, string motivoRechazo);
+        Task<IEnumerable<SolicitudHorasExtraDTO>> ObtenerTodasSolicitudesAsync();
     }
 }

@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 using SolicitudesService.Infrastructure.Data;
-using SolicitudesService.Application.Interfaces;
-using SolicitudesService.Application.Services;
+using SolicitudesService.Interfaces;
+using SolicitudesService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,10 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost",
-        builder => builder.WithOrigins("http://localhost:8088", "http://localhost:3000")
-                          .AllowAnyMethod()
-                          .AllowAnyHeader()
-                          .AllowCredentials());
+        policy => policy.WithOrigins("http://localhost:8088", "http://localhost:3000")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials());
 });
 
 // Configurar DbContext y conexión a SQL Server
@@ -29,7 +29,11 @@ builder.Services.AddDbContext<SolicitudesServiceDbContext>(options =>
 // Configurar HttpClient para FuncionarioService
 builder.Services.AddHttpClient("FuncionarioService", client =>
 {
-    var funcionarioServiceUrl = builder.Configuration["EmpleadoServiceUrl"];
+    var funcionarioServiceUrl = builder.Configuration["FuncionarioServiceUrl"];
+    if (string.IsNullOrEmpty(funcionarioServiceUrl))
+    {
+        throw new InvalidOperationException("FuncionarioServiceUrl is not configured in the application settings.");
+    }
     client.BaseAddress = new Uri(funcionarioServiceUrl);
 });
 

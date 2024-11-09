@@ -1,118 +1,131 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SolicitudesService.Application.DTO;
-using SolicitudesService.Application.Interfaces;
-using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
+using SolicitudesService.Application.DTO;
+using SolicitudesService.Interfaces;
+using FuncionarioService.Interfaces; // Integración con FuncionarioService
 
-namespace SolicitudesService.API.Controllers
+namespace SolicitudesServiceAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class SolicitudVacacionesController : ControllerBase
     {
         private readonly ISolicitudVacacionesService _solicitudVacacionesService;
-        private readonly ILogger<SolicitudVacacionesController> _logger;
+        private readonly IFuncionarioService _funcionarioService; // Integración con FuncionarioService
 
-        public SolicitudVacacionesController(ISolicitudVacacionesService solicitudVacacionesService, ILogger<SolicitudVacacionesController> logger)
+        public SolicitudVacacionesController(ISolicitudVacacionesService solicitudVacacionesService, IFuncionarioService funcionarioService)
         {
             _solicitudVacacionesService = solicitudVacacionesService;
-            _logger = logger;
-        }
-
-        // GET: api/SolicitudVacaciones
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<SolicitudVacacionesDTO>>> GetAllSolicitudes()
-        {
-            var solicitudes = (await _solicitudVacacionesService.GetAllSolicitudes()).ToList();
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes de vacaciones.", solicitudes.Count);
-            return Ok(solicitudes);
-        }
-
-        // GET: api/SolicitudVacaciones/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<SolicitudVacacionesDTO>> GetSolicitudVacacionesById(int id)
-        {
-            var solicitud = await _solicitudVacacionesService.GetSolicitudById(id);
-
-            if (solicitud == null)
-            {
-                _logger.LogWarning("No se encontró la solicitud de vacaciones con ID {Id}.", id);
-                return NotFound($"No se encontró la solicitud de vacaciones con ID {id}.");
-            }
-
-            _logger.LogInformation("Se obtuvo exitosamente la solicitud de vacaciones con ID {Id}.", id);
-            return Ok(solicitud);
+            _funcionarioService = funcionarioService;
         }
 
         // POST: api/SolicitudVacaciones
         [HttpPost]
-        public async Task<ActionResult<SolicitudVacacionesDTO>> CreateSolicitud([FromBody] SolicitudVacacionesDTO solicitudDTO)
+        public async Task<IActionResult> CrearSolicitud([FromBody] SolicitudVacacionesDTO solicitudDTO)
         {
-            try
-            {
-                var solicitudCreada = await _solicitudVacacionesService.CreateSolicitud(solicitudDTO);
-                return CreatedAtAction(nameof(GetSolicitudVacacionesById), new { id = solicitudCreada.IdSolicitudVacaciones }, solicitudCreada);
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError("Error inesperado al crear la solicitud: {Message}", ex.Message);
-                return StatusCode(500, "Ocurrió un error inesperado al crear la solicitud.");
-            }
+            if (solicitudDTO == null)
+                return BadRequest("La solicitud no puede estar vacía.");
+
+            // Verificar antigüedad del empleado
+            var empleado = await _funcionarioService.ObtenerEmpleadoPorIdAsync(solicitudDTO.IdEmpleado);
+            if (empleado == null)
+                return NotFound("Empleado no encontrado.");
+
+            var antiguedad = DateTime.Now - empleado.FechaContratacion;
+            if (antiguedad.TotalDays < 180)
+                return BadRequest("El empleado no tiene la antigüedad mínima de 6 meses para solicitar vacaciones.");
+
+            // Verificar saldo de vacaciones
+            var saldoVacaciones = await _funcionarioService.ObtenerSaldoVacacionesPorEmpleadoAsync(solicitudDTO.IdEmpleado);
+            if (saldoVacaciones.DiasDisponibles < solicitudDTO.DiasSolicitados)
+                return BadRequest("Saldo insuficiente.");
+
+            // Validaciones de formato de datos
+            if (solicitudDTO.DiasSolicitados <= 0)
+                return BadRequest("La cantidad de días debe ser mayor a cero.");
+
+            if (solicitudDTO.FechaInicio == default || solicitudDTO.FechaFin == default)
+                return BadRequest("Debe especificar fechas válidas para las vacaciones.");
+
+            if (solicitudDTO.FechaFin <= solicitudDTO.FechaInicio)
+                return BadRequest("La fecha de fin debe ser posterior a la fecha de inicio.");
+
+            if ((solicitudDTO.FechaFin - solicitudDTO.FechaInicio).Days + 1 != solicitudDTO.DiasSolicitados)
+                return BadRequest("La cantidad de días no coincide con el período seleccionado.");
+
+            var result = await _solicitudVacacionesService.CrearSolicitudAsync(solicitudDTO);
+            return CreatedAtAction(nameof(ObtenerSolicitudPorId), new { id = result.Id }, result);
         }
 
-        // PUT: api/SolicitudVacaciones/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSolicitud(int id, [FromBody] SolicitudVacacionesDTO solicitudDTO)
+        // PUT: api/SolicitudVacaciones/aprobar/{id}
+        [HttpPut("aprobar/{id}")]
+        public async Task<IActionResult> AprobarSolicitud(int id)
         {
-            try
-            {
-                var resultado = await _solicitudVacacionesService.UpdateSolicitud(id, solicitudDTO);
-                if (!resultado)
-                {
-                    _logger.LogWarning("No se pudo actualizar la solicitud de vacaciones con ID {Id}.", id);
-                    return NotFound($"No se encontró la solicitud de vacaciones con ID {id}.");
-                }
+            var solicitud = await _solicitudVacacionesService.ObtenerSolicitudPorIdAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+                return NotFound("Solicitud no encontrada o ya procesada.");
 
-                _logger.LogInformation("Solicitud de vacaciones con ID {Id} actualizada exitosamente.", id);
-                return NoContent();
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError("Error inesperado al actualizar la solicitud: {Message}", ex.Message);
-                return StatusCode(500, "Ocurrió un error inesperado al actualizar la solicitud.");
-            }
+            // Reconfirmar saldo antes de aprobar
+            var saldoVacaciones = await _funcionarioService.ObtenerSaldoVacacionesPorEmpleadoAsync(solicitud.IdEmpleado);
+            if (saldoVacaciones.DiasDisponibles < solicitud.DiasSolicitados)
+                return BadRequest("Saldo insuficiente para aprobar la solicitud.");
+
+            // Actualizar el saldo y días gozados en FuncionarioService
+            var actualizacionExitosa = await _funcionarioService.RestarDiasDeVacacionesAsync(solicitud.IdEmpleado, solicitud.DiasSolicitados);
+            if (!actualizacionExitosa)
+                return StatusCode(500, "Error al actualizar el saldo de vacaciones.");
+
+            // Aprobar la solicitud
+            var aprobado = await _solicitudVacacionesService.AprobarSolicitudAsync(id);
+            if (!aprobado)
+                return StatusCode(500, "No se pudo aprobar la solicitud.");
+
+            return Ok("Solicitud aprobada y saldo actualizado.");
         }
 
-        // DELETE: api/SolicitudVacaciones/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSolicitud(int id)
+        // PUT: api/SolicitudVacaciones/rechazar/{id}
+        [HttpPut("rechazar/{id}")]
+        public async Task<IActionResult> RechazarSolicitud(int id, [FromQuery] string motivoRechazo)
         {
-            var resultado = await _solicitudVacacionesService.DeleteSolicitud(id);
+            if (string.IsNullOrWhiteSpace(motivoRechazo))
+                return BadRequest("Debe proporcionar un motivo de rechazo.");
 
-            if (!resultado)
-            {
-                _logger.LogWarning("No se encontró la solicitud de vacaciones con ID {Id}.", id);
-                return NotFound($"No se encontró la solicitud de vacaciones con ID {id}.");
-            }
+            var solicitud = await _solicitudVacacionesService.ObtenerSolicitudPorIdAsync(id);
+            if (solicitud == null || solicitud.Estado != "Pendiente")
+                return NotFound("Solicitud no encontrada o ya procesada.");
 
-            _logger.LogInformation("Solicitud de vacaciones con ID {Id} eliminada exitosamente.", id);
-            return NoContent();
+            var rechazado = await _solicitudVacacionesService.RechazarSolicitudAsync(id, motivoRechazo);
+            if (!rechazado)
+                return StatusCode(500, "No se pudo rechazar la solicitud.");
+
+            return Ok("Solicitud rechazada.");
+        }
+
+        // GET: api/SolicitudVacaciones/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> ObtenerSolicitudPorId(int id)
+        {
+            if (id <= 0)
+                return BadRequest("El ID de solicitud debe ser un número positivo.");
+
+            var solicitud = await _solicitudVacacionesService.ObtenerSolicitudPorIdAsync(id);
+            if (solicitud == null)
+                return NotFound("Solicitud no encontrada.");
+
+            return Ok(solicitud);
         }
 
         // GET: api/SolicitudVacaciones/empleado/{idEmpleado}
         [HttpGet("empleado/{idEmpleado}")]
-        public async Task<ActionResult<IEnumerable<SolicitudVacacionesDTO>>> GetSolicitudesByEmpleado(int idEmpleado)
+        public async Task<IActionResult> ObtenerSolicitudesPorEmpleado(int idEmpleado)
         {
-            var solicitudes = await _solicitudVacacionesService.GetSolicitudesByEmpleado(idEmpleado);
-            if (solicitudes == null || !solicitudes.Any())
-            {
-                _logger.LogWarning("No se encontraron solicitudes de vacaciones para el empleado con ID {IdEmpleado}.", idEmpleado);
-                return NotFound($"No se encontraron solicitudes de vacaciones para el empleado con ID {idEmpleado}.");
-            }
+            if (idEmpleado <= 0)
+                return BadRequest("El ID del empleado debe ser un número positivo.");
 
-            _logger.LogInformation("Se obtuvieron {Count} solicitudes de vacaciones para el empleado con ID {IdEmpleado}.", solicitudes.Count(), idEmpleado);
+            var solicitudes = await _solicitudVacacionesService.ObtenerSolicitudesPorEmpleadoAsync(idEmpleado);
+            if (solicitudes == null || !solicitudes.Any())
+                return NotFound("No se encontraron solicitudes para el empleado especificado.");
+
             return Ok(solicitudes);
         }
     }
