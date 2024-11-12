@@ -79,7 +79,6 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<SolicitudesServiceDbContext>();
     try
     {
-        dbContext.Database.EnsureCreated();
         dbContext.Database.Migrate();
         Console.WriteLine("Migraciones aplicadas con éxito.");
     }
