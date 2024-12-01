@@ -12,8 +12,8 @@ using SolicitudesService.Infrastructure.Data;
 namespace SolicitudesService.Infrastructure.Migrations
 {
     [DbContext(typeof(SolicitudesServiceDbContext))]
-    [Migration("20241111083617_Fix")]
-    partial class Fix
+    [Migration("20241116140238_HorasExtraCal")]
+    partial class HorasExtraCal
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using SolicitudesService.Application.DTO;
 using SolicitudesService.Interfaces;
@@ -30,8 +31,8 @@ namespace SolicitudesServiceAPI.Controllers
             if (solicitudDTO.CantidadHoras <= 0)
                 return BadRequest("La cantidad de horas debe ser mayor a cero.");
 
-            if (solicitudDTO.CantidadHoras > 12)
-                return BadRequest("La cantidad de horas extra no puede exceder las 12 horas en un solo día.");
+            if (solicitudDTO.CantidadHoras > 4)
+                return BadRequest("La cantidad de horas extra no puede exceder las 4 horas en un solo día.");
 
             if (solicitudDTO.FechaTrabajo == default)
                 return BadRequest("Debe especificar una fecha válida para las horas extra trabajadas.");
@@ -71,6 +72,20 @@ namespace SolicitudesServiceAPI.Controllers
             return Ok(solicitudes);
         }
 
+        // GET: api/SolicitudHorasExtra/empleado/{idEmpleado}/saldo
+        [HttpGet("empleado/{idEmpleado}/saldo")]
+        public async Task<IActionResult> ObtenerSaldoHorasExtra(int idEmpleado)
+        {
+            if (idEmpleado <= 0)
+                return BadRequest("El ID del empleado debe ser un número positivo.");
+
+            var saldoHorasExtra = await _solicitudHorasExtraService.ObtenerSaldoHorasExtraAsync(idEmpleado);
+            if (saldoHorasExtra == null)
+                return NotFound(new { mensaje = "No se encontró el saldo de horas extra para el empleado especificado.", empleadoId = idEmpleado });
+
+            return Ok(saldoHorasExtra);
+        }
+
         // PUT: api/SolicitudHorasExtra
         [HttpPut]
         public async Task<IActionResult> ActualizarSolicitud([FromBody] SolicitudHorasExtraDTO solicitudDTO)
@@ -84,8 +99,8 @@ namespace SolicitudesServiceAPI.Controllers
             if (solicitudDTO.CantidadHoras <= 0)
                 return BadRequest("La cantidad de horas debe ser mayor a cero.");
 
-            if (solicitudDTO.CantidadHoras > 12)
-                return BadRequest("La cantidad de horas extra no puede exceder las 12 horas en un solo día.");
+            if (solicitudDTO.CantidadHoras > 4)
+                return BadRequest("La cantidad de horas extra no puede exceder las 4 horas en un solo día.");
 
             if (solicitudDTO.FechaTrabajo == default)
                 return BadRequest("Debe especificar una fecha válida para las horas extra trabajadas.");
@@ -123,9 +138,10 @@ namespace SolicitudesServiceAPI.Controllers
 
             var approved = await _solicitudHorasExtraService.AprobarSolicitudAsync(id);
             if (!approved)
-                return NotFound("No se pudo aprobar la solicitud. Puede que no esté en estado 'Pendiente' o no exista.");
+                return StatusCode(500, "No se pudo aprobar la solicitud.");
 
-            return NoContent();
+            var solicitud = await _solicitudHorasExtraService.ObtenerSolicitudPorIdAsync(id);
+            return Ok(new { mensaje = "Solicitud aprobada exitosamente.", estado = solicitud?.Estado });
         }
 
         // PUT: api/SolicitudHorasExtra/rechazar/{id}
