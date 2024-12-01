@@ -14,5 +14,6 @@ namespace SolicitudesService.Interfaces
         Task<bool> AprobarSolicitudAsync(int id);
         Task<bool> RechazarSolicitudAsync(int id, string motivoRechazo);
         Task<IEnumerable<SolicitudVacacionesDTO>> ObtenerTodasSolicitudesAsync();
+        Task<object> ObtenerResumenVacacionesAsync(int idEmpleado);
     }
 }

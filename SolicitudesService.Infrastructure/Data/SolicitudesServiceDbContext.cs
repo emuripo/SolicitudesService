@@ -74,7 +74,7 @@ namespace SolicitudesService.Infrastructure.Data
                 .Property(sv => sv.FechaFin)
                 .IsRequired();
             modelBuilder.Entity<SolicitudVacaciones>()
-                .Property(sv => sv.CantidadDias)
+                .Property(sv => sv.DiasSolicitados)
                 .IsRequired();
             modelBuilder.Entity<SolicitudVacaciones>()
                 .Property(sv => sv.Estado)

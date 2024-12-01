@@ -12,8 +12,8 @@ using SolicitudesService.Infrastructure.Data;
 namespace SolicitudesService.Infrastructure.Migrations
 {
     [DbContext(typeof(SolicitudesServiceDbContext))]
-    [Migration("20241106172651_InitialMigrate")]
-    partial class InitialMigrate
+    [Migration("20241116140238_HorasExtraCal")]
+    partial class HorasExtraCal
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -195,13 +195,13 @@ namespace SolicitudesService.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CantidadDias")
-                        .HasColumnType("int");
-
                     b.Property<string>("CreadoPor")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("DiasSolicitados")
+                        .HasColumnType("int");
 
                     b.Property<string>("Estado")
                         .IsRequired()
